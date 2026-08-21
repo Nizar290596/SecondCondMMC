@@ -1,0 +1,38 @@
+
+GENERAL_SECTION
+....................................................................
+2.0e-4        ! deltime (s)  
+100  0.001  ! Max iterations per deltime & frac. tolerance = abs(Xnew - X)/X to reduce iterations (0 = maxiterations)  
+
+
+
+OUTPUT_SECTION 
+....................................................................
+2                 !   units of time for output. 1 = usec 2 = msec 3 = sec.  4 = min.  5 = hr.
+1                 ! Species phimole or phimass output: 0=mass fraction; 1=mole fraction; 2=mol/cm^3 
+1.0e-9            !  Phi threshold for reporting res/phi
+63                ! 63 = D63 for soot D; 0 = volume averaged soot 
+0                 !  Time plot output
+ 
+!        Ai-Aj     C1-C2   H1-H2    S1-S2     T1-T2    ! Summed Product specification                    
+........................................................................
+--------------------------------------------------------------------
+
+ 
+! Tag   mode      R1 Sect Bin Range        R2 Sect Bin Range  Product section Bin Range               
+!  No.   No.     C1-C2  H1-H2 T1 T2       C1-C2  H1-H2 T1 T2   C1-C2  H1-H2  T1 T2
+........................................................................................
+----------------------------------------------------------------------------------------
+
+
+SOLVE_SECTION
+................................................................................................
+0.01          !  Tolerance for sum of species: stop for  Ysum > 1 + tolerance
+0.03  1.e-6  ! Default phimag  Minimum phimag
+1            ! Intervals of iteration or timestep for Phimag update; 0 = no update from default values.
+0.0  0.0     ! Max.Phi DownMovement/Phi; Max.Phi Up Movement/Phimax  0.0 = no restriction   (automatically 0 for unsteady or vode)
+1.0          ! Phi URF  (automatically 1 for unsteady or vode)
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+

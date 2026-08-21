@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -e
+
+#Create the Doxygen documentation
+
+# source bashrc file of the project
+source ../etc/bashrc
+source ../etc/supportFunctions.sh
+
+# -------------------------------------------------------
+# Make some pre checks
+
+__checkOpenFOAMEnvironment
+
+type doxygen >/dev/null 2>&1 ||
+{
+        echo >&2 "doxygen is not installed.";
+        echo >&2 "execute: sudo apt-get install doxygen graphviz"; exit 1;
+}
+
+# check if the CMS_PROJECT_DIR is set correctly
+if [[ "${MMC_PROJECT_USER_DIR}/Doxygen" != $(pwd) ]]; then
+        echo "The variable MMC_PROJECT_USER_DIR in ../etc/bashrc is possibly not set correctly."
+        echo "MMC_PROJECT_USER_DIR=${MMC_PROJECT_USER_DIR}"
+        exit 1
+fi
+
+# ------------------------------------------------------
+__banner Create Doxygen Manual
+doxygen Doxyfile > log.doxyfile_create
+
+# Add a soft link
+[[ ! -e "mainPage.html" ]] && ln -s html/index.html mainPage.html

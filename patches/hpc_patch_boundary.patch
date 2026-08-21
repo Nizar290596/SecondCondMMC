@@ -1,0 +1,86 @@
+From f17004395dcb4dc3bd02e0215e84ef652e1fad3f Mon Sep 17 00:00:00 2001
+From: Jan Gaertner <jan-wilhelm.gaertner@itv.uni-stuttgart.de>
+Date: Mon, 11 Aug 2025 14:58:45 +0200
+Subject: [PATCH] Add HPC internal boundary fix for issue #3277
+
+https://develop.openfoam.com/Development/openfoam/-/issues/3277
+---
+ .../filterDNS/filterDNSField/filterDNSField.H |  5 +++
+ .../filterDNSField/filterDNSFieldTemplates.C  | 36 ++++++++++++++++---
+ 2 files changed, 37 insertions(+), 4 deletions(-)
+
+diff --git a/src/mmcSupport/filterDNS/filterDNSField/filterDNSField.H b/src/mmcSupport/filterDNS/filterDNSField/filterDNSField.H
+index 1d26c69a..9037b82f 100644
+--- a/src/mmcSupport/filterDNS/filterDNSField/filterDNSField.H
++++ b/src/mmcSupport/filterDNS/filterDNSField/filterDNSField.H
+@@ -122,6 +122,11 @@ class filterDNSField
+         template<class fieldType>
+         void updateBoundary(fieldType& field) const;
+ 
++        //- Workaround for bug in OpenFOAM to construct the internal boundary
++        //  field.
++        template<class bFieldType>
++        tmp<bFieldType> constructInternalBoundaryField(bFieldType& field) const;
++
+         //- Calculate cell overlap of two cellIDs
+         scalar interVol(const label celli, const label filterCellI) const;
+ 
+diff --git a/src/mmcSupport/filterDNS/filterDNSField/filterDNSFieldTemplates.C b/src/mmcSupport/filterDNS/filterDNSField/filterDNSFieldTemplates.C
+index 30d675e4..bf7f80fd 100644
+--- a/src/mmcSupport/filterDNS/filterDNSField/filterDNSFieldTemplates.C
++++ b/src/mmcSupport/filterDNS/filterDNSField/filterDNSFieldTemplates.C
+@@ -246,12 +246,17 @@ void Foam::filterDNSField::updateBoundary
+ {
+     
+     auto& bField = field.boundaryFieldRef();
+-    auto bInternalFieldTmp = bField.boundaryInternalField();
+-    auto& bInternalField = bInternalFieldTmp();
+-
+     
+-    //Pout << "Field name is " << field.name() << endl;
++    // HPC PATCH BOUNDARY
++    // Construct the patch internal boundary field manually due to an OpenFOAM
++    // bug documented in:
++    // https://develop.openfoam.com/Development/openfoam/-/issues/3277
++    auto bInternalFieldTmp = constructInternalBoundaryField(bField);
+     
++
++    // Get const access to the boundary internal field
++    auto& bInternalField = bInternalFieldTmp();
++
+     // Loop over all patches
+     forAll(bField,patchi)
+     {
+@@ -266,6 +271,29 @@ void Foam::filterDNSField::updateBoundary
+ }
+ 
+ 
++template<class bFieldType>
++Foam::tmp<bFieldType> Foam::filterDNSField::constructInternalBoundaryField
++(
++    bFieldType& bField
++) const
++{
++    auto tresult = tmp<bFieldType>::New
++    (
++        bFieldType::Internal::null(),
++        bField
++    );
++
++    auto& result = tresult.ref();
++
++    forAll(result, patchi)
++    {
++        result[patchi] == bField[patchi].patchInternalField();
++    }
++
++    return tresult;
++}
++
++
+ template<class fieldType>
+ Foam::tmp<fieldType> 
+ Foam::filterDNSField::mapFilterFieldToDNS
+-- 
+2.43.0
+

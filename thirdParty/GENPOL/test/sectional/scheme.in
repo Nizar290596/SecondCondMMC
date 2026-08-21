@@ -1,0 +1,1251 @@
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+SPECIES_SECTION
+! scheme for gas-phase and sectional
+................................................................................................
+   Ca     S   Si   Ar        !  Elements additional to C H O N  (up to 20 additional)
+   40.0 32.0 28.0 40.0       !  Element MW's 
+
+
+................................................................................................
+1    1                  ! Sectional 1 or 0;    with radical series 1 or 0
+4 4 2                   ! Max No. of H,S,T  sections per C section
+1 5  1 5 1 5 1 5        ! Csection min max for each H section
+1 5  1 5  1 5  1 5   3   ! Csection min max for each S section; Tsection max for S range
+1 5   1  5              ! Csection min max for each S section; Tsection max for S range
+A4                      ! Species for polymer enthalpy  data
+2                       ! Minimum H mols for sectional
+
+................................................................................................
+4.43E-06 5.01E-08 -1.78E-11 5.08E-15 -5.81E-19 ! Mean-gas visc.(kg/(m-s) = a + bT + cT^2 +dT^3 + eT^4   for T(K)
+0.77 0.67    ! Sc of N2 in mean-gas (rel. to mean-gas viscosity); Pr of mean-gas. (mean-gas = representative major species)
+N2                      ! Species for diffusivity balance ( = Diluent species)
+
+! Species in col. 1 upper case, no blanks.
+! D/D-N2 = Diffusivity of species in mean gas / D-N2 in mean gas
+! Plot: 0 = not; 1 = Print each species;  2,3,4,5 = Plot Sum groups as well as individual; -2,-3,-4,-5 groups only
+! Contours as for Plot
+
+
+! Name             D/DN2       Table  Contour                                                                Sc
+!
+....................................................                                                                ........
+N2               1.000         1  0
+Ar               0.993782297   1  0
+O                1.652460207   1  0
+O2               1.051809612   1  0
+H                6.448039724   1  0
+H2               3.777814123   1  0
+OH               1.641581378   1  0
+HO2              1.051809612   1  0
+H2O              1.444981576   1  0
+H2O2             1.051809612   1  0
+CO               1.055824801   1  0
+CO2              0.843545941   1  0
+CH               1.751085459   1  0
+CH2              1.150994815   1  0
+CH2s=CH2         1.150994815   1  0
+CH3              1.143417339   1  0
+CH4              1.228821764   1  0
+CH2OH            0.893696165   1  0
+CH3OH            0.866055499   1  0
+HCO              0.850850899   1  0
+C2H              0.844874413   1  0
+C2H2             0.844874413   1  0
+C2H3             0.905299244   1  0
+C2H4             0.882771364   1  0
+C2H5             0.784918598   1  0
+C2H6             0.784918598   1  0
+HCCO             1.327566496   1  0
+HCCOH            0.788287277   1  0
+CH2CO            0.788287277   1  0
+CH3CO            0.826813926   1  0
+CH3HCO           0.771627653    0  0
+C3H2             0.84237998     0  0
+H2CCCH           0.631354763    0  0
+C3H4             0.676508817    0  0
+C3H4P=C3H4       0.676508817    0  0
+CH2CHCH2         0.636521399    0  0
+C4H2             0.52923693     0  0
+HCCHCCH          0.52923693     0  0
+H2CCCCH          0.52923693     0  0
+CH2CHCCH         0.52923693     0  0
+CH2CHCHCH        0.52923693     0  0
+CH2CHCCH2        0.52923693     0  0
+CH2CHCHCH2       0.555102787    0  0
+CH3CCCH2         0.52923693     0  0
+CH2O             0.823262507    0  0
+H2C4O            0.533567894    0  0
+C5H2             0.525752745    0  0
+C5H3             0.533567894    0  0
+C5H5             0.533567894    0  0
+C5H6             0.533567894    0  0
+C5H4OH           0.499907599    0  0
+C5H5O            0.499907599    0  0
+C6H2             0.530055196    0  0
+C6H              0.50535647     0  0
+C6H3             0.530055196   0  0
+l-C6H4=C6H4      0.477523073   0  0
+c-C6H4=C6H4      0.495849855   0  0
+A1-=C6H5         0.503220508   0  0
+A1=C6H6          0.503220508   0  0
+C6H5CH2          0.421907967   0  0
+C6H5CH3          0.428179497   0  0
+C6H5O            0.516404646   0  0
+C6H5OH           0.505490976   0  0
+C6H5C3H2         0.34779759    0  0
+P2-=C12H9        0.354862729   0  0
+P2=C12H10        0.354862729   0  0
+A1C2H=C8H6       0.426018274   0  0
+A1C2H-=C8H5      0.426018274   0  0
+A1C2H*=C8H5      0.426018274   0  0
+A1C2HP2=C10H6    0.377044665   0  0
+n-A1C2H2=C8H7    0.425123107   0  0
+i-A1C2H2=C8H7    0.425123107   0  0
+A1C2H3=C8H8      0.411338714   0  0
+A1C2H3*=C8H7     0.425123107   0  0
+A2-1=C10H7       0.351878555   0  0
+A2-2=C10H7       0.351878555   0  0
+A2=C10H8         0.369076222   0  0
+A2C2HA*=C12H7    0.354862729   0  0
+A2C2HA=C12H8     0.354862729   0  0
+A2C2HB*=C12H7    0.354862729   0  0
+A2C2HB=C12H8     0.354862729   0  0
+A2C2HP2=C14H8    0.321294819   0  0
+A2R5=C12H8       0.354862729   0  0
+A2R5-=C12H7      0.354862729   0  0
+C5H4O            0.476613646   0  0
+IND*=C9H7        0.393915939   0  0
+A3-1=C14H9       0.319183695   0  0
+A3-4=C14H9       0.319183695   0  0
+A3=C14H10        0.309363752   0  0
+A3C2H=C16H10     0.279326845   0  0
+C6H4O2           0.465560601   0  0
+A4-=C16H9        0.288193345   0  0
+A4=C16H10        0.279326845   0  0
+C7H16            0.386021903   0  0
+C7H15-1=C7H15    0.386021903   0  0
+C7H15-2=C7H15    0.386021903   0  0
+C7H15-3=C7H15    0.386021903   0  0
+C7H15=C7H15      0.386021903   0  0
+C6H12-1=C6H12    0.415960555   0  0
+C5H10-1=C6H10    0.471922127   0  0
+C4H9             0.525752745   0  0
+C3H7             0.646877213   0  0
+C5H11-1=C5H11    0.54271164    0  0
+C3H6             0.754819585   0  0
+C4H8-1=C4H8      0.584897264   0  0
+C6H14            0.415728297   0  0
+C6H13            0.415728297   0  0
+A1C3H7=C9H12     0.404462188   0  0
+A1C3H6B=C9H11    0.413194623   0  0
+A1C3H6J2=C9H11   0.413194623   0  0
+A1C3H6J1=C9H11   0.413194623   0  0
+iC8H18=C8H18     0.388963573   0  0
+tC4H9=C4H9       0.433105807   0  0
+C4H9-1=C4H9      0.433105807   0  0
+iC8H17=C8H17     0.397361389   0 0
+iC4H8=C4H8       0.421839725   0  0
+iC4H7=C4H7       0.415661054   0  0
+C3H8             0.646877213   0  0
+iC3H7=C3H7       0.646877213   0  0
+nC3H7=C3H7       0.646877213   0  0
+SH               0.843545941   0  0
+H2S              0.843545941   0  0
+HSO2             0.843545941   0  0
+HOSO             0.843545941   0  0
+HOSO2            0.843545941   0  0
+S2               0.843545941   0  0
+!CS    0.843545941  0  0  0
+!COS   0.843545941  0  0  0
+HSO              0.843545941   0  0
+!HOS   0.843545941  0  0  0
+!HSOH  0.843545941  0  0  0
+!H2SO  0.843545941  0  0  0
+!HOSHO 0.843545941  0  0  0
+HS2              0.843545941   0  0
+H2S2             0.843545941   0  0
+!H2SO4 0.843545941  0  0  0
+S                0.843545941   0  0
+SO               0.843545941   0  0
+SO2              0.843545941   0  0
+SO3              0.843545941   0  0
+HSS              0.843545941   0  0
+HSSH             0.843545941   0  0
+
+
+
+!---------------------
+
+!     sectional                
+!     C          H/C   H/C     H/C  H/C  D/DN2  density (kg/m^3)   Plot  Contour
+@     24         0.09  0.333  0.666  1.0  -1    1000.0              2  0
+@     48         0.04  0.333  0.666  1.0  -1    1500.0              2  0
+@     96         0.02  0.333  0.666  1.0  -1    1800.0              2  0
+@     193        0.01  0.333  0.666  1.0  -1    1800.0              2  0
+@     388        0.01  0.333  0.666  1.0  -1    1800.0              2  0
+
+--------------------------------------------------------------------------------------------------------------
+
+
+
+REACTION_SECTION
+
+!==================================================================
+
+
+!          MOLE COEFFICIENTS   a.A + b.B + c.C => d.D + e.E + f.F
+!     or   MOLE COEFFICIENTS   a.A + b.B + m.M => d.D + e.E + m.M
+
+! Rate constant   k =  A  * T^n * exp (-E/RT)
+! MolAr reaction rate  r =  k  *  [A]^a * [B]^b   ....
+! 
+! Units to satisfy:
+!    Rate               r   (mol/cm^3-s)
+!    Concentration     [A]  (mol/cm^3)
+
+
+!Reaction type   1  EBU only (infinite Chem. rate)
+!                2  min( EBU, Chem. rate)
+!                3  Chem. rate only       non-reversible use =>  eg.   a.A + b.B  => c.C  + d.D
+!                   Reversible reaction: as for (3)  but use =         a.A + b.B  =  c.C  + d.D
+
+!   For a=0, b=0 c=0 have ElementAry reaction using stoich. coeffs instead. 
+!          Ignores Tabled a, b & c coeffs (no need to list if ALL reactions Are ElementAry). 
+
+! Global reactions uses Tabled a, b and c instead of molAr coefficients  (not for reversible) 
+
+! Equilibrium constant Table needed if Reversible Reaction.  T(K)  v's ln(K) data  
+
+! Gas Phase  rate data     
+!                                A             n      E           
+
+!------------------------------------------------------------------------------
+! SECTIONS
+! Sections (contains Ai or Aj)
+! Ai is molecule; Aj is radical (has 1 less H) 
+! ?H or ?H2 in Section Products when Hsections > 1 to automatically balance H element if possible  
+
+!  rateconst    = A * T^n * EXP[-E /(Rgas T)] *  (m*C)^k      where C is carbon number.
+!  for Ctype  1 C= (Ci + Cj)/2 ;  2 C= max(Ci,Cj);   3 C= (Ci + Cj)     
+
+!  if rateconst A = -1.0 -> -5.0   Use Gamma Tables 1 - 5; row or column = 1 if non-sectional species in sectional equation 
+
+!  if rateconst A = -100.0:  Use kinetic collision rate * exp(-E/RT) 
+
+!                                         A           n         E      k    m   Ctype    S
+! Ajt2+Ajt2 => Ait2                     8.0e12      0.5       0.0    0.35   1     1      1.5
+
+! Ai<04>01>00_2 + H => Ajt2  +H2       8.85E+12      0       16000  0.667  1     2       1
+!    C  H  S  T 
+
+! Ai = Ai>00>00>00>0   means all loops 
+! Ait1 means all loops for Type 1
+! Must have Ait1 or Ajt2 etc (not Ai, Aj) on RHS except if nTsections = 1 when Ai, Aj is OK.
+
+! C carbon section number     1 - nCsections
+! H hydrogen section number   1 - nHsections
+! S structure section number  1 - nSsections
+! T type section number       1 - nTsections
+
+!  Operators 
+!  _  include single section
+!    \ exclude single section
+!  > include sections greater than  
+!  < include sections less than
+
+
+! STRUCTURE  S
+!  S is the specified sectional product species structure No. Products are distributed as S1, S2 etc. 
+! If S = 0 then Sproduct = MW-weighted average of S of sectional reactants (non-sectional are ignored).  
+! If S >= 1-99 (can be non-integer) then Sproducts = S
+! If S >= 101 then assign to non-sectional reactant Sreactant = S - 100. Then same as S = 0 above. 
+! If both reactants are non=sect then must specify S (>= 1) 
+
+
+! FRAGMENTATION
+! S < 0
+! write as
+! Ai + O2 => Ait2 + O2          4.3e11      0.0       8000.0      0.667  1.0    2  -1
+! or
+! Aj + O2 => Ajt2 + O2 + H      4.3e11      0.0       8000.0      0.667  1.0    2  -1
+! where S < 0 indicates that it is fragmentation of Ai or Aj into equal halves (Aj must shed H)
+  
+
+! TAGS #xyz used to sum reaction rates for Contour and Plot
+! e.g.  A2 + Ai => Ait02     -1   0.0    0.0   0.0    0.0    1    0     #281 
+
+
+! 5 blanks or 2 tabs to separate eqn from numerical data
+!==================================================================
+
+
+........................................................................
+4             ! <-  Units for E   1 = kJ/kmol;  2 = kJ/mol;   3 = kcal/mol  4 = cal/mol
+300           !   Threshold T(K) if E = 0 AND n = 0. Set above ambient to avoid spurious reactions
+1             ! Reaction analysis output
+1000.0           ! H mol error to OMIT Sectional reaction
+0.03          ! if |ratemols| < omitcriterion*|sumrate|, omit reporting reaction in contribution to product. 
+0.01          ! if ratemols > significantcrit*ratemax then add to Significant Reactions instances report.  
+1500          ! T(K) for gamma output in Reaction.txt
+0.001         ! Element mole error tolerance to mark ### all reactions (except H in Sectionals) and to OMIT in Chemkinout
+........................................................................
+!                                   A             n      E           
+
+
+
+
+C6H5CH2+H2CCCH=A2+H+H          1.0E12        0.0         0.0   ! 242 come C3+C3 da 3E12
+C5H5+C5H5=A2+H+H               3.3E12        0.5     24000.0   ! 247 da 1.3E13 
+
+
+
+! Submeccanismo H2/O2 usato da Frenklach
+                                         
+
+ H+O2 = O+OH                              8.300E+13    0.0    14413.0       !   1
+ O+H2 = H+OH                              5.000E+04    2.67    6290.0       !   2
+ OH+H2 = H+H2O                            2.160E+08    1.51    3430.0       !   3
+ OH+OH = O+H2O                            3.570E+04    2.4    -2110.0       !   4
+ H+H+M = H2+M                             1.000E+18   -1.0        0.0       !   5
+   H2/0.0/ H2O/0.0/ CH4/2.0/ CO2/0.0/ C2H6/3.00/ Ar/0.63/
+ H+H+H2 = H2+H2                           9.000E+16   -0.60       0.0       !   6
+ H+H+H2O = H2+H2O                         6.000E+19   -1.25       0.0       !   7
+ H+H+CO2 = H2+CO2                         5.500E+20   -2.0        0.0       !   8
+ H+OH+M = H2O+M                           2.200E+22   -2.0        0.0       !   9
+   H2/0.73/ H2O/3.65/ CH4/2.0/ C2H6/3.0/ Ar/0.38/
+ O+H+M = OH+M                             5.000E+17   -1.0        0.0       !  10
+   H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/ Ar/0.7/   
+ O+O+M = O2+M                             1.200E+17   -1.0        0.0       !  11
+   H2/ 2.4/ H2O/15.4/ CH4/ 2.0/ CO/ 1.75/ CO2/ 3.6/ C2H6/ 3.0/ Ar/ 0.83/
+ H+O2+M = HO2+M                           2.800E+18   -0.86       0.0       !  12
+   O2/0.0/ H2O/0.0/ CO/0.75/ CO2/1.5/ C2H6/1.5/ N2/0.0/ Ar/0.0/
+ H+O2+O2 = HO2+O2                         3.000E+20   -1.72       0.0       !  13
+ H+O2+H2O = HO2+H2O                       9.380E+18   -0.76       0.0       !  14
+ H+O2+N2 = HO2+N2                         3.750E+20   -1.72       0.0       !  15
+ H+O2+Ar = HO2+Ar                         7.000E+17   -0.80       0.0       !  16
+ OH+OH(+M) = H2O2(+M)                     7.400E+13   -0.37       0.0       !  17
+      LOW  /  2.300E+18   -0.900  -1700.00/ 
+      TROE/  0.7346   94.00  1756.00  5182.00 /
+   H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/ Ar/0.7/
+
+! Reazioni del radicale idroperossi (HO2)
+
+ HO2+H = O+H2O                            3.970E+12    0.0      671.0       !  18
+ HO2+H = O2+H2                            2.800E+13    0.0     1068.0       !  19
+ HO2+H = OH+OH                            1.340E+14    0.0      635.0       !  20
+ HO2+O = OH+O2                            2.000E+13    0.0        0.0       !  21
+ HO2+OH = O2+H2O                          2.900E+13    0.0     -500.0       !  22
+ HO2+HO2 = O2+H2O2                        1.300E+11    0.0    -1630.0       !  23
+  !DUPLICATE 
+ HO2+HO2 = O2+H2O2                        4.200E+14    0.0    12000.0       !  24
+  !DUPLICATE
+
+! Reazioni dell'H2O2
+
+ H2O2+H = HO2+H2                          1.210E+07    2.0     5200.0       !  25
+ H2O2+H = OH+H2O                          1.000E+13    0.0     3600.0       !  26
+ H2O2+O = OH+HO2                          9.630E+06    2.0     4000.0       !  27
+ H2O2+OH = HO2+H2O                        1.750E+12    0.0      320.0       !  28
+  !DUPLICATE
+ H2O2+OH = HO2+H2O                        5.800E+14    0.0     9560.0       !  29
+  !DUPLICATE
+
+
+! Ossidazione CO->CO2 (reazioni 30 e 31) Vandooren
+
+
+
+CO+OH=CO2+H                               5.06E6       1.5     -497.0       !  30
+CO+HO2=CO2+OH                             1.5E14       0.0    23650.0       !  31    
+
+
+
+! Ossidazione Metilidino (CH) (reazioni 32 e 33)
+
+
+
+CH+O=CO+H                                3.97E13       0.0       0.0        !  32
+CH+O2=CO+OH                              3.31E13       0.0       0.0        !  33 Baulch 1992
+
+
+
+! Reazioni Metilene-tripletto (CH2) (reazioni da 34 a 38)
+
+
+
+CH2+H=CH+H2                             6.02E12        0.0   -1789.2        !  34
+CH2+O=CO+H+H                            1.20E14        0.0       0.0        !  35
+CH2+O2=CO2+H+H                          2.47E13        0.0    1491.0        !  36
+CH2+CH2=C2H2+H2                         1.20E14        0.0     795.2        !  37
+CH2+CH3=C2H4+H                          4.22E13        0.0       0.0        !  38 Miller 1992
+
+
+
+! Reazioni Metilene-singoletto [CH2s] (reazioni da 39 a 50) 
+
+
+
+CH2s+M=CH2+M                          1.00E13        0.0       0.0        !  39 Miller 1992
+   H/12.0/ H2O/3.0/ C2H2/4.0/
+CH2s+CH4=CH3+CH3                         4.00E13        0.0       0.0        !  40 Miller 1992
+CH2s+C2H6=CH3+C2H5                    1.20E14        0.0       0.0        !  41 Miller 1992
+CH2s+O2=CO+OH+H                       7.00E13        0.0       0.0        !  42 Miller 1992
+CH2s+H2=CH3+H                         7.00E13        0.0       0.0        !  43 Miller 1992
+CH2s+H2O=CH3+OH                       1.00E14        0.0       0.0        !  44
+CH2s+O=CO+H+H                          3.00E13        0.0       0.0        !  45 Miller 1992
+CH2s+OH=CH2O+H                        3.00E13        0.0       0.0        !  46 Miller 1992
+CH2s+H=CH+H2                          3.00E13        0.0       0.0        !  47 Miller 1992
+CH2s+CO2=CH2O+CO                      3.00E12        0.0       0.0        !  48 Miller 1992
+CH2s+CH3=C2H4+H                       2.00E13        0.0       0.0        !  49 Miller 1992
+CH2s+CH2CO=C2H4+CO                    1.60E14        0.0       0.0        !  50 Miller 1992
+  
+
+
+! Reazioni Metile (CH3) (reazioni da 51 a 62) Vandooren-Van Tiggelen
+
+
+
+CH3+H=CH2+H2                           6.02E13         0.0   15108.8        !  51 Vandooren  
+CH3+O=CH2O+H                           8.43E13         0.0       0.0        !  52 Vandooren  
+CH3+O2=CH2O+H+O                        3.00E13         0.0   28711.48       !  53 Vandooren
+CH3+O2=CH2O+OH                         3.31E11         0.0    8946.0        !  54 Vandooren  
+CH3+OH=CH2O+H2                         8.00E12         0.0       0.0        !  55 Vandooren  
+CH3+OH=CH2O+H+H                        4.56E14         0.0   15493.87       !  56 Vandooren  
+CH3+OH=CH2+H2O                         3.61E13         0.0       0.0        !  57 Vandooren  
+CH3+CH2O=HCO+CH4                       4.09E12         0.0    8846.6        !  58 Vandooren  
+CH3+CH3=C2H5+H                         3.01E13         0.0   13518.4        !  59 Vandooren  
+CH3+CH3=C2H4+H2                        1.00E16         0.0   32013.5        !  60 Vandooren  
+CH3+CH3(+M)=C2H6(+M)                   9.03E16        -1.2     654.0        !  61 Miller  
+ LOW/3.18E41  -7.0  2762.0/ 
+ TROE/6.04E-1 6927.0 132.0/ 
+ H2/2.0/ CO/2.0/ CO2/3.0/ H2O/5.0/ 
+CH3+H(+M)=CH4(+M)                      6.0E16         -1.0       0.0        !  62 Miller   
+  LOW/8.0E26  -3.0  0.0/                   
+  H2/2.0/ CO/2.0/ CO2/3.0/ H2O/5.0/           
+
+
+
+! Reazioni Metano (CH4) (reazioni da 63 a 65)
+
+
+
+CH4+H=H2+CH3                           2.2E4           3.0    8041.46      !  63 Peters   
+CH4+O=OH+CH3                           9.03E8          1.56   8488.76      !  64 Vandooren   
+CH4+OH=H2O+CH3                         1.56E7          1.83   2783.2       !  65 Vandooren   
+
+
+
+! (28/9/98) Aggiunte reazioni per il Metanolo (CH3OH) dallo schema di Vandooren
+! e Van Tiggelen (reazioni da 66 a 74)
+
+
+
+CH3OH+H=CH2OH+H2                       3.4E+13         0.0    2600.0       !  66 Vandooren 
+CH3OH+OH=CH2OH+H2O                     4.8E+13         0.0    4500.0       !  67 Vandooren
+CH3OH+H=CH3+H2O                        1.3E+13         0.0    5300.0       !  68 Vandooren
+CH3OH+O=CH2OH+OH                       1.7E+12         0.0    2250.0       !  69 Vandooren
+CH2OH+M=CH2O+H+M                       5.0E+13         0.0   21000.0       !  70 Vandooren
+CH2OH+O2=CH2O+HO2                      1.0E+14         0.0    5000.0       !  71 Vandooren
+CH2OH+H=CH2O+H2                        2.0E+13         0.0       0.0       !  72 Vandooren
+CH2OH+O=CH2O+OH                        1.0E+13         0.0       0.0       !  73 Vandooren
+CH2OH+OH=CH2O+H2O                      1.0E+13         0.0       0.0       !  74 Vandooren
+
+
+
+! Reazioni Formaldeide (CH2O) e Formile (HCO) (reazioni da 75 a 83)
+
+
+
+CH2O+H=HCO+H2                          2.29E10         1.05   3280.2       !  75 Vandooren
+CH2O+O=HCO+OH                          4.16E11         0.57   2763.32      !  76 Vandooren  
+CH2O+OH=HCO+H2O                        3.43E9          1.18   -447.3       !  77 Vandooren   
+HCO+H=CO+H2                            9.03E13         0.0       0.0       !  78 Vandooren   
+HCO+O=CO2+H                            3.01E13         0.0       0.0       !  79 Vandooren   
+HCO+O=CO+OH                            3.01E13         0.0       0.0       !  80 Vandooren   
+HCO+OH=CO+H2O                          1.02E14         0.0       0.0       !  81 Vandooren   
+HCO+O2=CO+HO2                          3.01E12         0.0       0.0       !  82 Vandooren   
+HCO+M=CO+H+M                           7.0E14         -1.0   16990.66      !  83 Peters   
+
+
+
+! Ossidazione/Pirolisi Acetilene (C2H2) (reazioni da 84 a 99)        
+
+
+
+CH+CH2=C2H2+H                          4.00E13         0.0       0.0       !  84 Miller 1992
+C2H+O=CO+CH                            1.02E13         0.0       0.0       !  85
+C2H+O2=CO+CO+H                         1.81E13         0.0       0.0       !  86
+C2H2+O=C2H+OH                          3.16E15        -0.6   15000.0       !  87 Miller 1992
+C2H2+OH=HCCOH+H                        5.04E5          2.3   13500.0       !  88 Miller 1992
+C2H2+OH=CH3+CO                         4.83E-4         4.0   -2000.0       !  89 Miller 1992
+C2H2+O2=HCCO+OH                        2.00E8          1.5   30100.0       !  90 Miller 1992
+C2H2+H(+M)=C2H3(+M)                    5.54E12         0.0    2410.0       !  91 Miller      
+   LOW/2.67E27  -3.5  2410.0/         
+   H2/2.0/ CO/2.0/ CO2/3.0/ H2O/5.0/         
+C2H2+H=H2+C2H                         6.02E13         0.0   27832.0     !  92  
+C2H2+O=CH2+CO                          1.4E6           2.1    1562.0     !  93 McKinnon 
+C2H2+O=HCCO+H                          1.43E7          2.0    1900.0     !  94 MArinov  
+C2H2+OH=CH2CO+H                        2.18E-4         4.5   -1000.0     !  95 Miller 1992    
+C2H2+OH=H2O+C2H                       3.37E7          2.0   14000.0     !  96 Miller 1992  
+
+C2H+C2H2=C4H2+H                        6.00E12         0.0       0.0       !  97
+!C2H+C2H2=C4H2+H                        6.00E14         0.0       0.0       !  97
+
+C2H2+CH=C3H2+H                         1.00E14         0.0       0.0       !  98 Miller 1992
+C2H2+M=C2H+H+M                         4.20E16         0.0  107000.0       !  99 Miller 1992
+
+
+
+! Ossidazione/Pirolisi Etilene (C2H4) (reazioni da 100 a 110)
+
+
+
+C2H4+O=HCO+CH3                         3.46E6          2.08      0.0       ! 100
+C2H4+OH=C2H3+H2O                       2.05E13         0.0    5944.12      ! 101 Miller 1992
+C2H4+H=H2+C2H3                         8.15E14         0.0   14910.0       ! 102
+C2H3+O2=C2H2+HO2                       1.00E12         0.0       0.0       ! 103    
+C2H3+O=CH2CO+H                         3.00E13         0.0       0.0     ! 104    
+C2H3+O2=>CH2O+HCO                      5.42E12         0.0       0.0       ! 105
+C2H4+M=C2H2+H2+M                       1.50E15         0.0   55800.0       ! 106
+C2H4+M=C2H3+H+M                        1.4E16          0.0   82360.0       ! 107  
+C2H3+CH2=C2H2+CH3                      3.00E13         0.0       0.0       ! 108  
+C2H3+C2H=C2H2+C2H2                     3.00E13         0.0       0.0       ! 109 Miller 1992
+C2H3+CH=CH2+C2H2                       5.00E13         0.0       0.0       ! 110 Miller 1992
+
+
+
+
+! Ossidazione/Pirolisi Etano (C2H6) (reazioni da 111 a 116)
+
+
+
+C2H6+H=H2+C2H5                         1.45E9          1.5    7415.24      ! 111
+C2H6+O=OH+C2H5                         1.00E9          1.5    5804.96      ! 112
+C2H6+OH=H2O+C2H5                       7.23E6          2.0     864.78      ! 113 Baulch 1992
+C2H5+O=CH3HCO+H                        6.62E13         0.0       0.0       ! 114
+C2H5+O2=HO2+C2H4                       1.02E10         0.0   -2186.8       ! 115
+C2H5=C2H4+H                            3.00E42        -9.5   49561.26      ! 116
+
+
+
+! Ossidazione/Pirolisi Ketile (HCCO) (reazioni da 117 e 123)       
+
+
+
+HCCO+H=CH2s+CO                       1.00E14         0.0      0.0        ! 117 Miller 1992
+HCCO+O=CO+CO+H                         8.00E13         0.0      0.0        ! 118 Peters 1995
+HCCO+OH=>HCO+CO+H                      1.00E14         0.0      0.0        ! 119   
+HCCO+O2=>CO+CO+OH                      1.63E12         0.0    854.84       ! 120
+HCCO+C2H2=H2CCCH+CO                    1.00E11         0.0   3000.0        ! 121 Miller 1992
+HCCO+HCCO=C2H2+CO+CO                   1.00E13         0.0      0.0        ! 122 Miller 1992
+HCCO+CH=C2H2+CO                        5.00E13         0.0      0.0        ! 123 Miller 1992
+
+
+
+! Ossidazione Ketene (CH2CO) e Acetaldeide (CH3HCO) (reazioni da 124 a 129)
+
+
+
+CH3HCO+H=CH3+CO+H2                     4.00E13         0.0   4201.04       ! 124
+CH3HCO+OH=CH3+CO+H2O                   1.00E13         0.0      0.0        ! 125
+CH2CO+H=CH3+CO                         1.81E13         0.0   3379.6        ! 126
+CH2CO+O=HCO+HCO                        2.29E12         0.0   1351.84       ! 127
+CH2CO+OH=CH2O+HCO                      1.02E13         0.0      0.0        ! 128
+CH2CO+M=CH2+CO+M                       1.00E16         0.0  59323.83       ! 129
+  
+
+
+
+! Formazione/Ossidazione C3 (reazioni da 130 a 151)
+
+
+
+C3H2+O2=HCCO+CO+H                      5.00E13         0.0      0.0        ! 130 Miller 1992
+C3H2+OH=C2H2+HCO                       5.00E13         0.0      0.0        ! 131 Miller 1992
+CH2+C2H2=H2CCCH+H                      1.20E13         0.0   6600.0        ! 132 Miller 1992
+CH2s+C2H2=H2CCCH+H                   1.80E14         0.0      0.0        ! 133  
+H2CCCH+O2=CH2CO+HCO                    3.00E10         0.0   2868.0        ! 134 Miller 1992
+H2CCCH+O=CH2O+C2H                      2.00E13         0.0      0.0        ! 135 Miller 1992
+H2CCCH+OH=C3H2+H2O                     2.00E13         0.0      0.0        ! 136 Miller 1992
+C2H3+CH2=C3H4+H                        3.00E13         0.0      0.0        ! 137  
+C2H2+CH3=CH2CHCH2                      1.61E40        -8.58 20331.0        ! 138
+CH2CHCH2+H=C3H4+H2                     1.81E13         0.0      0.0        ! 139
+CH2CHCH2+CH3=C3H4+CH4                  1.00E11         0.0      0.0        ! 140
+CH2CHCH2+C2H3=C3H4+C2H4                1.00E12         0.0      0.0        ! 141
+C3H4+M=H2CCCH+H+M                      2.00E18         0.0  80000.0        ! 142
+C3H4+O2=H2CCCH+HO2                     4.00E13         0.0  61500.0        ! 143
+C3H4+OH=H2CCCH+H2O                     2.00E7          2.0   1000.0        ! 144 Miller 1992
+C3H4+H=CH2CHCH2                        4.00E12         0.0   2700.0        ! 145
+C3H4+H=H2CCCH+H2                       1.00E12         0.0   1500.0        ! 146
+C3H4+CH3=H2CCCH+CH4                    5.00E7          2.0   5000.0        ! 147
+H2CCCH+H=C3H2+H2                       5.00E13         0.0   3000.0        ! 148 Miller 1992
+C3H4P+H=H2CCCH+H2                      1.0E7           2.0   5000.0        ! 149 Miller 1992
+C3H4P+H=CH3+C2H2                       1.0E14          0.0   4000.0        ! 150 Miller 1992
+C3H4P+OH=H2CCCH+H2O                    8.00E6          2.0   1000.0        ! 151 Miller 1992
+
+
+
+
+! Formazione/Ossidazione C4 (reazioni da 152 a 183)
+
+
+
+C4H2+O=C3H2+CO                         1.20E12         0.0      0.0        ! 152 Miller 1992
+C3H2+CH2=H2CCCCH+H                     3.00E13         0.0      0.0        ! 153  
+!H2CCCCH(+M)=C4H2+H(+M)                 1.0E14          0.0  55000.0        ! 154 Miller 1992
+H2CCCCH(+M)=C4H2+H(+M)                 1.0E14          0.0  47000.0        ! 154 Miller 1992
+ LOW/2.0E15  0.0  40000.0/
+HCCHCCH(+M)=C4H2+H(+M)                 1.0E14          0.0  36000.0        ! 155 Miller 1992
+ LOW/1.0E14  0.0  30000.0/
+C2H3+C2H2=CH2CHCCH+H                   2.00E12         0.0   5000.0        ! 156 Miller 1992
+H2CCCH+CH=H2CCCCH+H                    7.00E13         0.0      0.0        ! 157 Miller 1992
+H2CCCH+CH2=CH2CHCCH+H                  4.00E13         0.0      0.0        ! 158 Miller 1992
+H2CCCCH+O2=CH2CO+HCCO                  1.00E12         0.0      0.0        ! 159 Miller 1992
+H2CCCCH+OH=C4H2+H2O                    3.00E13         0.0      0.0        ! 160 Miller 1992
+H2CCCCH+O=CH2CO+C2H                    2.00E13         0.0      0.0        ! 161 Miller 1992
+C4H2+OH=H2C4O+H                        6.66E12         0.0   -410.0        ! 162 Miller 1992
+H2C4O+H=C2H2+HCCO                      5.0E13          0.0   3000.0        ! 163 Miller 1992
+H2C4O+OH=CH2CO+HCCO                    1.0E7           2.0   2000.0        ! 164 Miller 1992
+H2CCCH+CH=HCCHCCH+H                    7.0E13          0.0      0.0        ! 165 Miller 1992
+CH2CHCCH+OH=HCCHCCH+H2O                7.5E6           2.0   5000.0        ! 166 Miller 1992
+CH2CHCCH+H=HCCHCCH+H2                  2.0E7           2.0  15000.0        ! 167 Miller 1992
+CH2CHCCH+OH=H2CCCCH+H2O                1.0E7           2.0   2000.0        ! 168 Miller 1992
+H+HCCHCCH=H2CCCCH+H                    1.0E14          0.0      0.0        ! 169 Miller 1992
+H2CCCCH+O=H2C4O+H                      2.0E13          0.0      0.0        ! 170 Miller 1992
+H2CCCCH+H=C4H2+H2                      5.0E13          0.0      0.0        ! 171 Miller 1992
+H2CCCCH+CH2=C3H4+C2H                   2.0E13          0.0      0.0        ! 172 Miller 1992
+CH2CHCCH+H=H2CCCCH+H2                  3.0E7           2.0   5000.0        ! 173 Miller 1992
+CH2CHCHCH+OH=CH2CHCCH+H2O              2.0E7           2.0   1000.0        ! 174 Miller 1992
+CH2CHCHCH+H=CH2CHCCH+H2                3.0E7           2.0   1000.0        ! 175 Miller 1992
+C2H3+C2H4=CH2CHCHCH2+H                 3.0E12          0.0   1000.0        ! 176  
+CH2CHCHCH2+H=CH2CHCHCH+H2              3.0E7           2.0  13000.0        ! 177 Miller 1992
+CH2CHCHCH2+H=CH2CHCCH2+H2              3.0E7           2.0   6000.0        ! 178 Miller 1992
+CH2CHCHCH2+OH=CH2CHCHCH+H2O            2.0E7           2.0   5000.0        ! 179 Miller 1992
+CH2CHCHCH2+OH=CH2CHCCH2+H2O            2.0E7           2.0   2000.0        ! 180 Miller 1992
+CH2CHCHCH+H=CH2CHCCH2+H                1.0E14          0.0      0.0        ! 181 Miller 1992
+CH2CHCCH2(+M)=CH2CHCCH+H(+M)           1.0E14          0.0  50000.0        ! 182 Miller 1992
+ LOW/2.0E15  0.0  42000./
+CH2CHCHCH(+M)=CH2CHCCH+H(+M)           1.0E14          0.0  37000.0        ! 183 Miller 1992
+ LOW/1.0E14 0.0 30000./
+
+
+
+! Formazione C5 (reazioni da 184 a 186)
+
+
+
+C4H2+CH=C5H2+H                         1.0E14          0.0      0.0        ! 184 Miller 1992
+C4H2+CH2=C5H3+H                        1.3E13          0.0   4326.0        ! 185 Miller 1992
+C4H2+CH2s=C5H3+H                     3.0E13          0.0      0.0        ! 186 Miller 1992
+
+
+
+! J.T.McKinnon 23 settembre 1998 (reazioni da 187 a 190)
+
+
+
+C5H6+H=>CH2CHCH2+C2H2                  1.00E+13        0.0  12000.0        ! 187     
+C5H5+O=>CH2CHCHCH+CO                   1.0E+14         0.0      0.0        ! 188
+C5H5+O=C5H4O+H                         3.0E13          0.0      0.0        ! 189 MArinov stimato invece di 7E14
+C5H5+OH=C5H4OH+H                       3.0E13          0.0      0.0        ! 190 Emdee 1992
+
+
+
+! Formazione Benzene (A1) (reazioni da 191 a 199)
+
+
+
+H2CCCH+H2CCCH=A1-+H                    3.0E12          0.0      0.0        ! 191 MArinov 1996
+H2CCCH+C3H2=A1-                        3.0E12          0.0      0.0        ! 192
+C3H4+C3H2=A1                           7.4E13         -0.7    920.0        ! 193
+C3H4P+C3H2=A1                          1.4E14         -0.8   1030.0        ! 194
+C3H4+H2CCCH=A1+H                       2.2E11          0.0   2000.0        ! 195
+C2H2+CH2CHCHCH=A1+H                    1.60E16        -1.33  5400.0        ! 196 Wang 1994
+HCCHCCH+C2H2=A1-                       2.8E3           2.90  1400.0        ! 197 Miller 1992
+CH2CHCCH2+C2H2=A1+H                    3.0E11          0.0  14900.0        ! 198 MArinov 
+H2CCCCH+C2H2=A1-                       3.0E11          0.0  14900.0        ! 199 MArinov (Tsang RRKM)
+
+
+
+! Benzene dal Toluene (reazioni da 200 a 206)
+
+
+
+CH2CHCCH2+H=CH3+H2CCCH                 1.0E14          0.0      0.0        ! 200 MArinov 1996
+CH2CHCCH2+H=CH3CCCH2+H                 3.0E13          0.0      0.0        ! 201 MArinov 1996
+CH3CCCH2+H=CH3+H2CCCH                  1.0E14          0.0      0.0        ! 202 MArinov 1996
+CH3CCCH2+H2CCCH=C6H5CH2+H              3.0E12          0.0      0.0        ! 203 MArinov K329
+A1-+CH3=C6H5CH2+H                      5.7E-2          5.0  15700.0        ! 204 McKinnon
+C6H5CH2+H=C6H5CH3                      1.8E14          0.0      0.0        ! 205 Emdee 1992
+C6H5CH3+H=A1+CH3                       1.2E13          0.0   5148.0        ! 206 Emdee 1992
+
+
+
+! Ossidazione Benzene (A1) (reazioni da 207 a 213)
+
+
+
+A1+O2=A1-+HO2                          6.3E13          0.0  60000.0        ! 207 Emdee 1992
+!A1+H=H2+A1-                           2.5E14          0.0  16000.0        ! 208 Frank
+!A1+OH=H2O+A1-                         2.1E13          0.0   4600.0        ! 209 Frank
+A1-+O2=>2CO+C2H2+C2H3                  7.5E13          0.0  15002.0        ! 210 McKinnon
+A1-+OH=C6H5O+H                         5.0E13          0.0      0.0        ! 211 Miller 1992
+C5H4OH=C5H4O+H                         2.1E13          0.0  48000.0        ! 212 Emdee 1992
+C5H4O=CO+C2H2+C2H2                     1.0E15          0.0  78000.0        ! 213 Emdee 1992
+
+
+
+! Ossidazione Benzene (A1) (schema preso da Frank) (reazioni da 214 a 240)
+
+
+
+C5H5+H=C5H6                            2.0E14    0.0      0.0  ! 214  Estimate
+!C5H4O+H=C5H4OH                        5.36E31  -5.4  12420.0  ! 215  
+C5H6+H=C5H5+H2                         2.19E8    1.77  3000.0  ! 216  Emdee 1992
+C5H6+O=C5H5+OH                         1.81E13   0.0   3080.0  ! 217  Emdee 1992
+C5H6+OH=C5H5+H2O                       3.43E9    1.18  -447.0  ! 218  Emdee 1992
+C5H6+O2=C5H5+HO2                       2.0E13    0.0  25000.0  ! 219  
+C5H4O=>CH2CHCCH+CO                     1.0E12    0.0      0.0  ! 220
+A1-+O2=C6H5O+O                         2.6E13    0.0   6120.0  ! 221  Frank 1994 
+A1-+O2=C6H4O2+H                        3.0E13    0.0   8981.0  ! 222  Frank 1994
+A1-+O=>C5H5+CO                         1.0E14    0.0      0.0  ! 223  Frank 1994
+C6H4O2=>C5H4O+CO                       7.4E11    0.0  59014.0  ! 224  
+C6H5O=>C5H5+CO                         1.48E12   0.0  43850.0  ! 225  Frank 1994 
+!C6H5O+H=>C5H6+CO                      1.06E53 -10.7  41360.0  ! 226  
+C6H5O+H=>C5H6+CO                       3.0E13    0.0      0.0  ! 227  
+C6H5O+O=>C6H4O2+H                      3.0E13    0.0      0.0  ! 228
+C6H5O+H=C6H5OH                         2.53E14   0.0      0.0  ! 229
+A1-+H=A1                               1.0E14    0.0      0.0  ! 230
+A1+H=A1-+H2                            2.83E13   0.0  15999.0  ! 231
+A1+OH=C6H5OH+H                         1.32E13   0.0  10994.0  ! 232
+A1+OH=A1-+H2O                          1.45E13   0.0   4491.0  ! 233
+A1+O=A1-+OH                            1.0E1     3.8   1790.0  ! 234
+A1+O=C6H5OH                            2.23E13   0.0   4530.0  ! 235
+C6H5OH+H=C6H5O+H2                      2.28E14   0.0  12404.0  ! 236
+C6H5OH+O=C6H5O+OH                      1.28E13   0.0   2891.0  ! 237
+C6H5OH+OH=C6H5O+H2O                    1.0E13    0.0      0.0  ! 238
+!C6H5OH+OH=>C6H4OH+H2O                 2.0E12    0.0      0.0  ! 239
+!C6H4OH=>C5H5+CO                       2.50E11   0.0  43976.0  ! 240
+
+
+
+! Formazione C6 
+
+!C4H2+C2H=C6H2+H                        4.0E13   0.0       0.0  ! 241
+C4H2+C2H=C6H2+H                        4.0E12   0.0       0.0  ! 241
+
+
+
+! PAH da radicali stabili per risonanza  (RSFR mechanism: resonantly stabilized free radicals)
+! (reazioni da 242 a 246)
+
+
+
+!C6H5CH2+H2CCCH=A2+H2           3.0E11        0.0         0.0   ! 242 cambiato da 3E11
+C6H5CH2+OH=C6H5O+CH3           2.3E49      -10.9     14130.0   ! 243  McKinnon
+A1-+H2CCCH=C6H5C3H2+H          3.0E12        0.0         0.0   ! 244
+C6H5C3H2+H2CCCH=P2-+H          3.0E12        0.0         0.0   ! 245
+P2-+C2H2=A3+H                  6.64E33      -5.92    22608.0   ! 246  Frank
+
+
+
+! PAH: Naftalene da ricombinazione di radicali Ciclopentadienile 
+
+
+
+!C5H5+C5H5=A2+H+H               3.0E11        0.0         0.0   ! 247 
+!C5H5+C5H5=A2+H+H              2.0E13        0.0      8000.0   ! 247  MArinov 1998 
+
+
+! Reazione modificata il 23 settembre 1998.
+! Il valore di questa reazione, presa da MArinov, e' stato modificato da
+! 2E13  0.0  4000.0 al valore su scritto.
+
+
+
+! (2/5/1997) Aggiunto 1-Indenile (IND*)
+
+
+
+A2-1+O=>IND*+CO                9.0E13        0.0         0.0   ! 248  inv.Simile C6H6
+!IND*+C5H5=A3+H+H              3.8E12        0.0         0.0   ! 249  MArinov
+!IND*+C5H5=A3+H+H              1.0E13        0.0      8000.0   ! 249  MArinov 1998
+C5H5+IND*=>A3+H2               2.0E13        0.0     14000.0   ! 250  MArr
+
+
+
+
+! ******************************************************************************************
+!
+!     Schema cinetico di Frenklach dal Benzene in poi aggiornato (Rocco)
+!     Il meccanismo considerato è l'HACA (Hydrogen abstraction ACetylene Addition)
+!
+! ******************************************************************************************
+
+!
+! Reazioni del C5H2 e C5H3  (reazioni da 251 a 257)
+!
+C5H2+OH=>C4H2+H+CO             2.00E+13      0.0         0.0   ! 251 Guess
+C5H2+CH=C6H2+H                 5.00E+13      0.0         0.0   ! 252 Guess
+C5H2+O2=H2C4O+CO               1.00E+12      0.0         0.0   ! 253 Guess
+C5H3+OH=C5H2+H2O               1.00E+13      0.0         0.0   ! 254 Guess
+C5H3+CH=C6H2+H+H               5.00E+13      0.0         0.0   ! 255 Guess
+C5H3+CH2=l-C6H4+H              5.00E+13      0.0         0.0   ! 256 = C3H3+CH2
+C5H3+O2=H2C4O+HCO              1.00E+12      0.0         0.0   ! 257 Guess
+!
+! Reazioni del C6H e C6H2   
+!
+C6H+H(+M)=C6H2(+M)             1.000E+17    -1.0         0.0   ! 258
+      LOW  /  3.750E+33   -4.800   1900.00/
+      TROE/  0.6464  132.00  1315.00  5566.00 /
+   H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/ Ar/0.7/
+!C6H2+H=C6H3                   1.10E+30     -4.92    10800.0   ! 259 RRKM, 760 t
+!C6H+O=C4H+C2O                 5.00E+13      0.0         0.0   ! 260 = C2H + O
+C6H+H2=H+C6H2                  4.90E+05      2.5       560.0   ! 261 = C2H + H2
+C6H2+O=C5H2+CO                 2.70E+13      0.0      1720.0   ! 262 = C4H2 + O
+!C6H2+OH=>C2H+C2H2+C2O         6.60E+12      0.0      -410.0   ! 263 = C4H2 + OH
+C6H2+OH=C6H+H2O                3.37E+07      2.0     14000.0   ! 264 = C2H2 + OH
+!
+! Reazioni del Benzino (c-C6H4)
+!
+C6H3+H=C4H2+C2H2               2.80E+23     -2.55    10780.0   ! 265 RRKM, 760 t
+C6H3+H=l-C6H4                  3.40E+43     -9.01    12120.0   ! 266 RRKM, 760 t
+C6H3+H=C6H2+H2                 3.00E+13      0.00        0.0   ! 267 C2H3+H
+C6H3+OH=C6H2+H2O               5.00E+12      0.00        0.0   ! 268 
+C6H3+O2=>CO+C3H2+HCCO          5.00E+11      0.00        0.0   ! 269 Estimated
+!l-C6H4+H=n-C6H5               5.9E+39      -8.25    15600.0   ! 270 760 t
+l-C6H4+H=A1-                   1.7E+78     -19.72    31400.0   ! 271 760 t
+l-C6H4+H=c-C6H4+H              1.4E+54     -11.70    34500.0   ! 272 760 t
+l-C6H4+H=C6H3+H2               6.65E+06      2.53     9240.0   ! 273 = C4H4+H
+l-C6H4+OH=C6H3+H2O             3.10E+06      2.0       430.0   ! 274 see notes
+c-C6H4+H=A1-                   2.4E+60     -13.66    29500.0   ! 275 760 t
+!
+! Reazioni del benzene (A1) e del fenile (A1-)
+!
+!A1+H=c-C6H7                   1.4E+51     -11.90    16100.0   ! 276 760 t
+!A1+H=A1-+H2                   2.50E+14      0.0     16000.0   ! 277 Kiefer
+!A1+OH=A1-+H2O                 1.60E+08      1.42     1450.0   ! 278 CEC
+!A1+O=A1-+OH                   7.23E+02      3.68      990.0   ! 279 Baulch 2 channels!
+A1-+H(+M)=A1(+M)               1.0E+14       0.00        0.0   ! 280
+     LOW/ 6.6E+75  -16.30   7000. /
+     TROE / 1.0 0.1 584.9 6113. /
+   H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+!
+! Formazione e reazioni del Fenilacetilene (A1C2H)
+!
+HCCHCCH+C4H2=A1C2H-            9.6E+70     -17.77    31300.0   ! 281 760 t
+A1+C2H=A1C2H+H                 5.00E+13      0.0         0.0   ! 282 Guess
+A1-+C2H2=n-A1C2H2              7.0E+38      -8.02    16400.0   ! 283 760 t
+A1-+C2H2=A1C2H+H               3.3E+33      -5.70    25500.0   ! 284 760 t
+A1C2H+H=n-A1C2H2               3.0E+43      -9.22    15272.0   ! 285 760 t
+A1C2H+H=i-A1C2H2               3.0E+43      -9.22    15272.0   ! 286 760 t
+A1C2H+H=A1C2H*+H2              2.50E+14      0.0     16000.0   ! 287 =A1+H
+A1C2H+H=A1C2H-+H2              2.50E+14      0.0     16000.0   ! 288 =A1+H
+A1C2H+OH=A1C2H*+H2O            1.60E+08      1.42     1450.0   ! 289 =A1+OH
+A1C2H+OH=A1C2H-+H2O            1.60E+08      1.42     1450.0   ! 290 =A1+OH
+A1C2H-+H(+M)=A1C2H(+M)         1.0E+14       0.00        0.0   ! 291 = A1-+H
+    LOW/ 6.6E+75  -16.30   7000. /
+    TROE / 1.0 0.1 584.9 6113. /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A1C2H*+H(+M)=A1C2H(+M)         1.0E+14       0.00        0.0   ! 292 = A1-+H
+    LOW/ 6.6E+75  -16.30   7000. /
+    TROE / 1.0 0.1 584.9 6113. /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+!
+! Formazione e reazioni dello Stirene (A1C2H3) e del Fenilvinile (A1C2H3*)
+!
+A1+C2H3=A1C2H3+H                    7.90E+11   0.0    6400.    ! 293 Stein
+A1-+C2H4=A1C2H3+H                   2.51E+12   0.00   6190.    ! 294 Stein
+A1-+C2H3=A1C2H3                     1.2E+27   -4.22   7235.    ! 295 RRKM 760 t
+A1-+C2H3=i-A1C2H2+H                 8.5E-02    4.71  18424.    ! 296 RRKM 760 t
+A1-+C2H3=n-A1C2H2+H                 9.4E+00    4.14  23234.    ! 297 RRKM 760 t
+A1C2H3=i-A1C2H2+H                   5.3E+27   -3.63 109332.    ! 298 RRKM 760 t
+A1C2H3=n-A1C2H2+H                   1.1E+32   -4.77 119483.    ! 299 RRKM 760 t
+A1C2H3+H=A1C2H3*+H2                 2.50E+14   0.0   16000.    ! 300 Kiefer
+A1C2H3+OH=A1C2H3*+H2O               1.60E+08   1.42   1450.0   ! 301 CEC
+A1C2H3*+H(+M)=A1C2H3(+M)            1.0E+14    0.00      0.0   ! 302 = A1-+H
+    LOW/ 6.6E+75  -16.30   7000. /
+    TROE / 1.0 0.1 584.9 6113. /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A1C2H3+H=n-A1C2H2+H2                6.65E+06    2.53 12240.0   ! 303 = C2H4 + H
+A1C2H3+H=i-A1C2H2+H2                3.33E+05    2.53  9240.0   ! 304 -3kcal/mol,/2
+A1C2H3+OH=n-A1C2H2+H2O              3.10E+06    2.0   3430.0   ! 305 refit to Liu
+A1C2H3+OH=i-A1C2H2+H2O              1.55E+06    2.0    430.0   ! 306 -3kcal/mol
+n-A1C2H2+H=A1C2H+H2                 1.5E+13     0.0      0.0   ! 307
+i-A1C2H2+H=A1C2H+H2                 3.0E+13     0.0      0.0   ! 308 
+n-A1C2H2+H=i-A1C2H2+H               9.9E+04     3.37 22040.0   ! 309 RRKM 760 t
+n-A1C2H2+OH=A1C2H+H2O               2.5E+12     0.0      0.0   ! 310 
+i-A1C2H2+OH=A1C2H+H2O               5.0E+12     0.0      0.0   ! 311
+!
+! Formazione e reazioni del Naftalene (A2)
+!
+!A1C2H*+C2H2=A1C2HC2H2              1.4E+32    -6.28  14800.   ! 312 760xt
+A1C2H*+C2H2=A2-1                    2.2E+62   -14.56  33100.   ! 313 760 t
+A1C2H*+C2H2=A1C2HP2+H               1.8E+19    -1.67  18800.   ! 314 760 t
+!A1C2H*+C2H2=naphthyne+H             5.7E+64   -14.41 57000.   ! 315 760 t
+!A1C2HP2+H=A1C2HC2H2                2.0E+27    -4.55   4800.   ! 316 760xt
+A1C2HP2+H=A2-1                      1.4E+64   -14.57  29900.   ! 317 760 t
+!A1C2HP2+H=naphthyne + H             1.9E+73   -16.30 60900.   ! 318 760 t
+!naphthyne+H=A2-1                    4.9E+52   -12.43 33000.   ! 319 760 t
+A1C2H+C2H=A1C2HP2+H                 5.00E+13    0.0       0.   ! 320 Estimated
+A1C2H3*+C2H2=A2+H                   1.6E+16    -1.33   6600.   ! 321 760 t
+n-A1C2H2+C2H2=A2+H                  1.6E+16    -1.33   5400.   ! 322 760 t
+A2+H=A2-1+H2                        2.50E+14    0.0   16000.   ! 323 Kiefea
+A2+H=A2-2+H2                        2.50E+14    0.0   16000.   ! 324 Kiefea
+A2+OH=A2-1+H2O                      1.60E+08    1.42   1450.0  ! 325 CEC
+A2+OH=A2-2+H2O                      1.60E+08    1.42   1450.0  ! 326 CEC
+A2-1+H(+M)=A2(+M)                   1.00E+14    0.0       0.0  ! 327
+    LOW  /  3.80E+127 -31.434 18676.0 /
+    TROE / 0.200   122.8   478.4  5411.9 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A2-2+H(+M)=A2(+M)                   1.00E+14    0.0       0.0  ! 328
+    LOW  /  9.50E+129 -32.132  18782.0  /
+    TROE / 0.870   492.7   117.9  5652.0 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A2-1+H=A2-2+H                       2.40E+24   -1.81  45281.0  ! 329 760 t
+!
+! Formazione e reazioni dell'Etinilnaftalene (A2C2H)
+!
+! A2C2HA 1-etinilnaftalene
+! A2C2HB 2-etinilnaftalene
+!
+A2+C2H=A2C2HA+H                     5.00E+13    0.0       0.   ! 330 Estimated
+A2+C2H=A2C2HB+H                     5.00E+13    0.0       0.   ! 331 Estimated
+!A2-1+C2H2=A2C2H2                   1.7E+43    -9.12  21100.   ! 332 760 t
+A2-1+C2H2=A2C2HA+H                  1.3E+24    -3.06  22600.   ! 333 760 t
+!A2-1+C2H2=A2R5+H                   9.7E+30    -5.26  21600.   ! 334 760xt
+!A2C2HA+H=A2C2H2                    5.9E+46   -10.03  19100.   ! 335 760 t
+!A2C2HA+H=A2R5+H                    4.6E+37    -7.03  23100.   ! 336 760xt
+!A2C2H2A=A2R5+H                     1.5E+46   -10.27  41300.   ! 337 760xt
+!A2C2H2+H=A2C2HA+H2                 1.50E+13    0.0       0.   ! 338 Estimated
+!A2C2H2+OH=A2C2HA+H2O               2.50E+12    0.0       0.   ! 339 Estimated
+A2C2HA+H=A2C2HA*+H2                 2.50E+14    0.0   16000.   ! 340 Kiefer
+A2C2HB+H=A2C2HB*+H2                 2.50E+14    0.0   16000.   ! 341 Kiefer
+A2C2HA+OH=A2C2HA*+H2O               1.60E+08    1.42   1450.   ! 342 CEC
+A2C2HB+OH=A2C2HB*+H2O               1.60E+08    1.42   1450.   ! 343 CEC
+A2C2HB*+H(+M)=A2C2HB(+M)            1.00E+14    0.0       0.0  ! 344
+    LOW  /  3.80E+127 -31.434 18676.0 /
+    TROE / 0.200   122.8   478.4  5411.9 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A2C2HA*+H(+M)=A2C2HA(+M)            1.00E+14    0.0       0.0  ! 345
+    LOW  /  9.50E+129 -32.132  18782.0  /
+    TROE / 0.870   492.7   117.9  5652.0 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+!
+! Formazione e reazioni del Fenantrene (A3)
+!
+A2C2HB*+C2H2=A3-1                   1.1E+62  -14.56  33100.    ! 346 760 t
+A2C2HB*+C2H2=A2C2HP2+H              1.8E+19   -1.67  18800.    ! 347 760 t
+A2C2HP2+H=A3-1                      6.9E+63  -14.57  29900.    ! 348 760 t
+A2C2HA*+C2H2=A3-4                   1.1E+62  -14.56  33100.    ! 349 760 t
+A2C2HA*+C2H2=A2C2HP2+H              1.8E+19   -1.67  18800.    ! 350 760 t
+A2C2HP2+H=A3-4                      6.9E+63  -14.57  29900.    ! 351 760 t
+A2C2HA+C2H=A2C2HP2+H                5.00E+13   0.0       0.    ! 352 Estimated
+A2C2HB+C2H=A2C2HP2+H                5.00E+13   0.0       0.    ! 353 Estimated
+A3+H=A3-1+H2                        2.50E+14   0.0   16000.    ! 354 Kiefer
+A3+H=A3-4+H2                        2.50E+14   0.0   16000.    ! 355 Kiefer
+A3+OH=A3-1+H2O                      1.60E+08   1.42   1450.0   ! 356 CEC
+A3+OH=A3-4+H2O                      1.60E+08   1.42   1450.0   ! 357 CEC
+A3-1+H(+M)=A3(+M)                   1.00E+14   0.0       0.0   ! 358 
+    LOW  / 4.0E+148 -37.505 20551.0 /
+    TROE / 1.000   536.3   144.9  5632.8 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A3-4+H(+M)=A3(+M)                   1.00E+14   0.0       0.0   ! 359
+    LOW  /2.1E+139  -34.803 18378.0 /
+    TROE / 0.001   171.4   171.4  4992.8 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A3-1+H=A3-4+H                       3.80E+40  -6.309 61782.0   ! 360 760 t
+
+! Reazioni aggiunte da Joerg
+
+!A1-+C4H4=A2+H                      3.3E+33   -5.70  25500.    ! 361 760 t
+!A2-1+C4H4=A3+H                     3.3E+33   -5.70  25500.    ! 362 760 t
+!A2-2+C4H4=A3+H                     3.3E+33   -5.70  25500.    ! 363 760 t
+!A2R5-+C2H2=A3-4                    2.0E+13    0.00  55000.    ! 364 Nigel Moriaty
+A2R5+H=A2R5-+H2                     2.50E+14   0.0   16000.    ! 365 A1 + H
+A2R5+OH=A2R5-+H2O                   1.60E+8    1.42   1450.0   ! 366 A1 + OH
+A2R5-+H(+M)=A2R5(+M)                1.0E+14    0.00      0.0   ! 367 A1- + H
+    LOW/ 6.6E+75  -16.30  7000.  /
+    TROE / 1.0 0.1 584.9  6113.  /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+A2-1+C2H2=A2R5+H                    9.7E+30   -5.26  21600.0   ! 368 H.Wang M.Frenklach JPC.98.44.1994
+A2C2HA+H=A2R5+H                     4.6E+37   -7.03  23100.    ! 369 760
+!A2C2H2=A2R5+H                      1.56E+46  -10.27 41300     ! 370 760
+A1C2H*+A1=A3+H                      1.1E+23    -2.92 15890.0   ! 371 760
+A1-+A1C2H=A3+H                      1.1E+23    -2.92 15890.0   ! 372 760
+!
+! Formazione e reazioni del Pirene (A4)
+!
+A3+C2H=A3C2H+H                      5.00E+13    0.00      0.   ! 373 Estimated
+!A3-4+C2H2=A3C2H2                   8.0E+61   -14.50  34800.   ! 374 760 t
+A3-4+C2H2=A3C2H+H                   1.2E+26    -3.44  30200.   ! 375 760 t
+A3-4+C2H2=A4+H                      6.6E+24    -3.36  17800.   ! 376 760 t
+!A3C2H+H=A3C2H2                     1.9E+64   -15.12  29300.   ! 377 760 t
+A3C2H+H=A4+H                        9.0E+38    -7.39  20700.   ! 378 760 t
+!A3C2H2=A4+H                        2.0E+63   -15.28  43200.   ! 379 760 t
+A4+H=A4-+H2                         2.50E+14    0.0   16000.   ! 380 Kiefer
+A4+OH=A4-+H2O                       1.60E+08    1.42   1450.0  ! 381 CEC
+A4-+H=A4                            1.00E+14    0.0       0.   ! 382 kinf
+!
+! Formazione e reazioni del Bifenile (P2)
+!
+A1+A1-=P2+H                         1.1E+23   -2.92   15890.0  ! 383 760 t
+!A1+A1-=P2-H                        3.7E+32   -6.74    9870.0  ! 384 760 t
+!P2-H=P2+H                          3.8E+37   -7.96   27880.0  ! 385 760 t
+A1-+A1-=P2                          2.0E+19   -2.05    2900.0  ! 386 760 t
+A1-+A1-=P2-+H                       2.3E-01    4.62   28950.0  ! 387 760 t
+P2=P2-+H                            1.1E+25   -2.72  114270.0  ! 388 760 t
+P2+H=P2-+H2                         2.50E+14   0.0    16000.   ! 389 Kiefea
+P2+OH=P2-+H2O                       1.60E+08   1.42    1450.0  ! 390 CEC
+!P2-+C2H2=A3+H                      4.6E+06    1.97    7300.0  ! 391 A3-+C2H2, kinf
+!
+! Ossidazione del Benzene (A1)
+!
+A1+O=C6H5O+H                        2.20E+13   0.0     4530.0  ! 392 CEC
+!A1+OH=C6H5OH+H                     1.30E+13   0.0    10600.0  ! 393 CEC
+!A1-+O2=C6H5O+O                     2.10E+12   0.0     7470.0  ! 394 LIN
+!A1-+O2=C6H5O+O                     2.70E+12   0.35    5970.0  ! 395 Sum of two channels, Just
+!
+!C6H5O=CO+C5H5                      2.50E+11   0.0    43900.0  ! 396 LIN
+!C6H5O+H=CO+C5H6                    3.00E+13   0.0        0.0  ! 397 Est.
+C6H5O+O=>HCO+C2H2+C2H2+CO                3.00E+13   0.0        0.0  ! 398Est.
+C6H5O+H(+M)=C6H5OH(+M)              2.5E+14    0.0        0.0  ! 399
+    LOW  / 1.00E+94 -21.84 13880.0 /       ! E in cal/mol
+    TROE / 0.043 304.2 60000. 5896.4 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+!
+!C6H5OH+H=C6H5O+H2                  1.15E+14   0.0    12400.0  ! 400 LIN
+!C6H5OH+O=C6H5O+OH                  2.80E+13   0.0     7352.0  ! 401 Brezinski
+!C6H5OH+OH=C6H5O+H2O                6.00E+12   0.0        0.0  ! 402 LIN
+!
+!C5H5+H=C5H6                        1.00E+14   0.0        0.0  ! 403 Brezinsky
+C5H5+H(+M)=C5H6(+M)                 1.0E+14    0.0        0.0  ! 404
+    LOW  / 4.4E+80 -18.28 12994.0 /       ! E in cal/mol
+    TROE / 0.068   400.7  4135.8  5501.9 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+!
+!C5H5+O=CH2CHCHCH+CO                1.00E+14   0.0        0.0  ! 405 Brezinsky
+!C5H5+OH=C5H4OH+H                   5.00E+12   0.0        0.0  ! 406 Est.
+C5H5+HO2=C5H5O+OH                   3.00E+13   0.0        0.0  ! 407 Brezinsky
+!
+!C5H6+H=C5H5+H2                     2.20E+08   1.77    3000.0  ! 408 Brezinsky
+!C5H6+O=C5H5+OH                     1.80E+13   0.0     3080.0  ! 409 Brezinsky
+!C5H6+OH=C5H5+H2O                   3.43E+09   1.18    -447.0  ! 410 Brezinsky
+!
+C5H5O=CH2CHCHCH+CO                  2.50E+11   0.0    43900.0  ! 411 Brezinsky
+C5H5O+H=CH2O+C2H2+C2H2                  3.00E+13   0.0        0.0  ! 412 Est.
+C5H5O+O=CO2+CH2CHCHCH               3.00E+13   0.0        0.0  ! 413 Est.
+!
+!C5H4OH=C5H4O+H                     2.10E+13   0.0    48000.0  ! 414 Brezinsky
+C5H4OH+H=CH2O+C2H2+C2H2                 3.00E+13   0.0        0.0  ! 415 Est.
+C5H4OH+O=CO2+CH2CHCHCH              3.00E+13   0.0        0.0  ! 416 Est.
+!
+!C5H4O=CO+C2H2+C2H2                 1.00E+15   0.0    78000.0  ! 417 Brezinsky
+C5H4O+O=CO2+C2H2+C2H2                   3.00E+13   0.0        0.0  ! 418 Est
+!
+! Ossidazione dei PAH da OH
+!
+A1C2H+OH=>A1-+CH2CO                 2.18E-04   4.5    -1000.0  ! 419 =C2H2+OH
+A1C2HP2+OH=>A1C2H-+CH2CO            2.18E-04   4.5    -1000.0  ! 420 =C2H2+OH
+A2C2HA+OH=>A2-1+CH2CO               2.18E-04   4.5    -1000.0  ! 421 =C2H2+OH
+A2C2HB+OH=>A2-2+CH2CO               2.18E-04   4.5    -1000.0  ! 422 =C2H2+OH
+A3C2H+OH=>A3-4+CH2CO                2.18E-04   4.5    -1000.0  ! 423 =C2H2+OH
+!
+A1C2H+OH=>C6H5O+C2H2                1.30E+13   0.0    10600.0  ! 424 CEC
+A1C2H3+OH=>C6H5O+C2H4               1.30E+13   0.0    10600.0  ! 425 CEC
+A1C2HP2+OH=>C4H2+C6H5O              1.30E+13   0.0    10600.0  ! 426 CEC
+A2+OH=>A1C2H+CH2CO+H                1.30E+13   0.0    10600.0  ! 427 CEC
+A2C2HA+OH=>A1C2H+H2C4O+H            1.30E+13   0.0    10600.0  ! 428 CEC
+A2C2HB+OH=>A1C2H+H2C4O+H            1.30E+13   0.0    10600.0  ! 429 CEC
+A3+OH=>A2C2HB+CH2CO+H               6.50E+12   0.0    10600.0  ! 430 CEC
+A3+OH=>A2C2HA+CH2CO+H               6.50E+12   0.0    10600.0  ! 431 CEC
+A3C2H+OH=>A2C2HA+H2C4O+H            6.50E+12   0.0    10600.0  ! 432 CEC
+A3C2H+OH=>A2C2HB+H2C4O+H            6.50E+12   0.0    10600.0  ! 433 CEC
+A4+OH=>A3-4+CH2CO                   1.30E+13   0.0    10600.0  ! 434 CEC
+!
+! Ossidazione dei PAH da O
+!
+A1C2H+O=>HCCO+A1-                   2.04E+07   2.0     1900.0  ! 435 =C2H2+O
+A1C2HP2+O=>HCCO+A1C2H-              2.04E+07   2.0     1900.0  ! 436 =C2H2+O
+A1C2H3+O=>A1-+CH3+CO                1.92E+07   1.83     220.0  ! 437 =C2H4+O
+A2C2HA+O=>HCCO+A2-1                 2.04E+07   2.0     1900.0  ! 438 =C2H2+O
+A2C2HB+O=>HCCO+A2-2                 2.04E+07   2.0     1900.0  ! 439 =C2H2+O
+!
+A1C2H+O=>C2H+C6H5O                  2.20E+13   0.0     4530.0  ! 440 =A1 + O
+A1C2H3+O=>C2H3+C6H5O                2.20E+13   0.0     4530.0  ! 441 =A1 + O
+!A1C2HP2+O=>C6H5O+C4H               2.20E+13   0.0     4530.0  ! 442 =A1 + O
+A2+O=>CH2CO+A1C2H                   2.20E+13   0.0     4530.0  ! 443 =A1 + O
+A2C2HA+O=>A1C2HP2+CH2CO             2.20E+13   0.0     4530.0  ! 444 =A1 + O
+A2C2HB+O=>A1C2HP2+CH2CO             2.20E+13   0.0     4530.0  ! 445 =A1 + O
+A3+O=>A2C2HA+CH2CO                  1.10E+13   0.0     4530.0  ! 446 =A1 + O / 2
+A3+O=>A2C2HB+CH2CO                  1.10E+13   0.0     4530.0  ! 447 =A1 + O / 2
+A3C2H+O=>A2C2HA+H2C4O               1.10E+13   0.0     4530.0  ! 448 =A1 + O / 2
+A3C2H+O=>A2C2HB+H2C4O               1.10E+13   0.0     4530.0  ! 449 =A1 + O / 2
+A4+O=>A3-4+HCCO                     2.20E+13   0.0     4530.0  ! 450 =A1 + O
+!
+! Ossidazione dei PAH da O2
+!
+!A1C2H*+O2=>l-C6H4+CO+HCO           2.70E+12   0.35    5970.0  ! 451 = A1- + O2
+!A1C2H-+O2=>l-C6H4+CO+HCO           2.70E+12   0.35    5970.0  ! 452 = A1- + O2
+!A1C2H3*+O2=>l-C6H6+CO+HCO          2.70E+12   0.35    5970.0  ! 453 = A1- + O2
+!n-A1C2H2+O2=>A1-+CO+CH2O           1.00E+11   0.0        0.0  ! 454 Estimated
+!A2-1+O2=>A1C2H+HCO+CO              2.70E+12   0.35    5970.0  ! 455= A1- + O2
+!A2-2+O2=>A1C2H+HCO+CO              2.70E+12   0.35    5970.0  ! 456 = A1- + O2
+!A2C2HA*+O2=>A2-1+CO+CO             2.70E+12   0.35    5970.0  ! 457 = A1- + O2
+!A2C2HB*+O2=>A2-2+CO+CO             2.70E+12   0.35    5970.0  ! 458 = A1- + O2
+!A3-4+O2=>A2C2HB+HCO+CO             2.70E+12   0.35    5970.0  ! 459 = A1- + O2
+!A3-1+O2=>A2C2HA+HCO+CO             2.70E+12   0.35    5970.0  ! 460 = A1- + O2
+!A4-+O2=>A3-4+CO+CO                 2.70E+12   0.35    5970.0  ! 461 = A1- + O2
+!
+A1C2H*+O2=>l-C6H4+CO+HCO            2.10E+12   0.0     7470.0  ! 462 = A1- + O2
+A1C2H-+O2=>l-C6H4+CO+HCO            2.10E+12   0.0     7470.0  ! 463 = A1- + O2
+!A1C2H3*+O2=>l-C6H6+CO+HCO          2.10E+12   0.0     7470.0  ! 464 = A1- + O2
+n-A1C2H2+O2=>A1-+CO+CH2O            1.00E+11   0.0        0.0  ! 465 Estimated
+A2-1+O2=>A1C2H+HCO+CO               2.10E+12   0.0     7470.0  ! 466 = A1- + O2
+A2-2+O2=>A1C2H+HCO+CO               2.10E+12   0.0     7470.0  ! 467 = A1- + O2
+A2C2HA*+O2=>A2-1+CO+CO              2.10E+12   0.0     7470.0  ! 468 = A1- + O2
+A2C2HB*+O2=>A2-2+CO+CO              2.10E+12   0.0     7470.0  ! 469 = A1- + O2
+A3-4+O2=>A2C2HB+HCO+CO              2.10E+12   0.0     7470.0  ! 470 = A1- + O2
+A3-1+O2=>A2C2HA+HCO+CO              2.10E+12   0.0     7470.0  ! 471 = A1- + O2
+A4-+O2=>A3-4+CO+CO                  2.10E+12   0.0     7470.0  ! 472 = A1- + O2
+
+! *********************************************************************************
+!
+! Aggiunte reazioni n-eptano secondo lo schema riportato sull'Articolo di Senkan.
+! I dati cinetici, termodinamici e di trasporto sono stati presi in rete e si 
+! riferiscono allo schema di  EL BAKALI A., DELFAU J-L.  ( 12/04/2002 )
+!
+! *********************************************************************************
+!%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+! PARTICLE SECTION
+
+
+A1- + A1- => Ait1 + H            2.0e13       0.5       0.0    0.0   0.0   1   1
+A2-1 + A1- => Ait2           2.0e13       0.5       0.0    0.0   0.0   1   1
+A2-2 + A1- => Ait1           2.0e13       0.5       0.0    0.0   0.0   1   1
+
+
+A1- + Ajt2 => Ait1           8.0e12       0.5       0.0    0.590   0.35    1  3
+A2-1 + Ajt2 => Ait1          8.0e12       0.5       0.0    0.590   0.35    3  2
+A2-2 + Ajt2 => Ait2          8.0e12       0.5       0.0    0.590   0.35    1   1
+
+Ajt2+Ajt2 => Ait2            8.0e12      0.5       0.0    0.35   1   1     0
+
+
+Ait1  =>Ajt2  +H             6.67E+13     0       113100    1    1   2     0        
+                              
+                              
+Ajt1  + H=>Ait1              7.83E+13     0          0      0    1   2     1       
+                              
+Ait1  +H=>Ajt2  +H2          8.85E+12    0         16000   0.667  1  2     3     
+                              
+                              
+Ajt1  +H2=>Ait1  +H          8.85E+12    0.0       16000.0 -1.104  1  2    2
+
+
+Ajt2 + H => Ait1 +H2         2.95E+13    0.0        0.0     0.0   0.667   2 1  
+
+
+
+Ait1 + OH => Ait1 + HCO      3.0e12       0.5      10600.0      0.623  1.0   2  2    
+
+Aj + O2 => Ait1 + 2CO        4.3e11      0.0       8000.0      0.667  1.0    2  3
+
+
+Ajt1 + C2H2 => Ait1 + H      3e6        1.787       3262       0.616  1  2    3
+
+
+
+A1 + Ait1 => Ait1             -1         0.0         0.0       0.0    0.0     1  0
+
+A2 + A2 => Ait1               -1         0.0         0.0       0.0    0.0     1  1.5
+A2 + Ait1 => Ait1             -1         0.0         0.0       0.0    0.0     1  0
+
+A3 + Ait1 => Ait1             -1         0.0         0.0       0.0    0.0     1  0
+
+A4 + A4 => Ait1               -1         0.0         0.0       0.0    0.0     1  1
+A4 + Ait1 => Ajt1             -1         0.0         0.0       0.0    0.0     1  3
+
+Ait1+Ait1 => Ait1             -1         0.0         0.0       0.0    0.0     1  3 
+
+Ait1 + H => Ait1 + H2 +H    0.983E+13    0.0        20000       1      1      2  3 
+
+
+-------------------------------------------------------------------
+
+! Coagulation rates   H = Hamakerconst * Hamaker_H-i * Hamaker_S-i * Hamaker_T-i
+...................................................................................
+1.0e-19                  ! Hamaker const (J) for H-1 section
+1.0 0.6666 0.3333  0.1   ! Hamaker H-i / Hamaker H-1   for i = 1 - nHsections
+1.0 1.0 1.0  1.0         ! Hamaker S-i / Hamakerconst  for i = 1 - nSsections
+1.0 1.0 1.0  1.0         ! Hamaker T-i / Hamakerconst  for i = 1 - nSsections
+1.0e-19                  ! Hamaker constant (J)  for non-sectional species
+1                        ! No. of Gamma Tables
+
+
+! Gamma: coagulation efficiency
+! Data from: 
+! D'Alessio, A., BArone, A.C., Cau, R., D'Anna, A., and Minutolo, P., 
+! Surface Deposition and Coagulation Efficiency of Combustion Generated NanopArticles in the Size Range from 1nm to 10nm. 
+! Proc. Combust. Inst. 30 (2005) 2595–2603
+
+! Data is Phi_TonA    2DCoag2006.xls      phi = Phi_TonA * A/T  A is Hamaker;   Gamma = 1 - (1 + phi) * exp(-phi)                                                  
+...................................................................................
+24          1.87E+20     3.91E+20  5.29E+20  7.07E+20  8.75E+20  1.04E+21  1.23E+21  1.38E+21  1.54E+21  1.67E+21  1.78E+21  1.88E+21  1.98E+21  2.04E+21  2.10E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21  2.11E+21
+48          2.54E+20     5.29E+20  7.25E+20  1.03E+21  1.30E+21  1.56E+21  1.85E+21  2.11E+21  2.36E+21  2.57E+21  2.78E+21  2.93E+21  3.10E+21  3.22E+21  3.32E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21  3.37E+21
+96          3.33E+20     7.07E+20  1.03E+21  1.45E+21  1.78E+21  2.20E+21  2.59E+21  3.03E+21  3.40E+21  3.80E+21  4.14E+21  4.45E+21  4.70E+21  4.93E+21  5.11E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21  5.22E+21
+193         4.33E+20     8.75E+20  1.30E+21  1.78E+21  2.32E+21  2.90E+21  3.52E+21  4.13E+21  4.75E+21  5.32E+21  5.86E+21  6.34E+21  6.72E+21  7.13E+21  7.40E+21  7.64E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21  7.71E+21
+388         5.31E+20     1.04E+21  1.56E+21  2.20E+21  2.90E+21  3.69E+21  4.53E+21  5.34E+21  6.20E+21  6.99E+21  7.86E+21  8.55E+21  9.20E+21  9.86E+21  1.03E+22  1.06E+22  1.09E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22  1.10E+22
+778         6.27E+20     1.23E+21  1.85E+21  2.59E+21  3.52E+21  4.53E+21  5.58E+21  6.88E+21  8.12E+21  9.32E+21  1.06E+22  1.17E+22  1.27E+22  1.36E+22  1.44E+22  1.50E+22  1.55E+22  1.58E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22  1.59E+22
+1560        7.03E+20     1.38E+21  2.11E+21  3.03E+21  4.13E+21  5.34E+21  6.88E+21  8.38E+21  1.01E+22  1.17E+22  1.35E+22  1.52E+22  1.67E+22  1.82E+22  1.94E+22  2.04E+22  2.11E+22  2.15E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22  2.19E+22
+3124        7.80E+20     1.54E+21  2.36E+21  3.40E+21  4.75E+21  6.20E+21  8.12E+21  1.01E+22  1.20E+22  1.42E+22  1.68E+22  1.91E+22  2.12E+22  2.32E+22  2.52E+22  2.68E+22  2.81E+22  2.90E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22  2.96E+22
+6256        8.26E+20     1.67E+21  2.57E+21  3.80E+21  5.32E+21  6.99E+21  9.32E+21  1.17E+22  1.42E+22  1.70E+22  2.03E+22  2.33E+22  2.67E+22  2.95E+22  3.25E+22  3.49E+22  3.68E+22  3.85E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22  3.96E+22
+12528       8.89E+20     1.78E+21  2.78E+21  4.14E+21  5.86E+21  7.86E+21  1.06E+22  1.35E+22  1.68E+22  2.03E+22  2.38E+22  2.80E+22  3.24E+22  3.61E+22  4.07E+22  4.40E+22  4.71E+22  4.98E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22  5.17E+22
+25088       9.19E+20     1.88E+21  2.93E+21  4.45E+21  6.34E+21  8.55E+21  1.17E+22  1.52E+22  1.91E+22  2.33E+22  2.80E+22  3.30E+22  3.82E+22  4.39E+22  4.98E+22  5.47E+22  5.93E+22  6.32E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22  6.67E+22
+50240       9.28E+20     1.98E+21  3.10E+21  4.70E+21  6.72E+21  9.20E+21  1.27E+22  1.67E+22  2.12E+22  2.67E+22  3.24E+22  3.82E+22  4.39E+22  5.14E+22  5.88E+22  6.67E+22  7.25E+22  7.88E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22  8.40E+22
+100608      9.34E+20     2.04E+21  3.22E+21  4.93E+21  7.13E+21  9.86E+21  1.36E+22  1.82E+22  2.32E+22  2.95E+22  3.61E+22  4.39E+22  5.14E+22  5.83E+22  6.83E+22  7.81E+22  8.75E+22  9.51E+22  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23  1.04E+23
+201472      9.34E+20     2.10E+21  3.32E+21  5.11E+21  7.40E+21  1.03E+22  1.44E+22  1.94E+22  2.52E+22  3.25E+22  4.07E+22  4.98E+22  5.88E+22  6.83E+22  7.70E+22  8.99E+22  1.02E+23  1.13E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23  1.24E+23
+403456      9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.64E+21  1.06E+22  1.50E+22  2.04E+22  2.68E+22  3.49E+22  4.40E+22  5.47E+22  6.67E+22  7.81E+22  8.99E+22  1.00E+23  1.15E+23  1.30E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23  1.46E+23
+807936      9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.09E+22  1.55E+22  2.11E+22  2.81E+22  3.68E+22  4.71E+22  5.93E+22  7.25E+22  8.75E+22  1.02E+23  1.15E+23  1.29E+23  1.48E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+1617920     9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.58E+22  2.15E+22  2.90E+22  3.85E+22  4.98E+22  6.32E+22  7.88E+22  9.51E+22  1.13E+23  1.30E+23  1.48E+23  1.49E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+3239936     9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+6483968     9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+12972032    9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+25944100    9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+51888250    9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+103776600   9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+207557000   9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+415150000   9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+830300000   9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+1660600000  9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+3321200000  9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+6642400000  9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+13284800000 9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+26569600000 9.34E+20     2.11E+21  3.37E+21  5.22E+21  7.71E+21  1.10E+22  1.59E+22  2.19E+22  2.96E+22  3.96E+22  5.17E+22  6.67E+22  8.40E+22  1.04E+23  1.24E+23  1.46E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23  1.68E+23
+-------------------------------------------------------------------
+
+GASIFICATION_SECTION
+1    ! Units for E only for gasification:   1 = kJ/kmol;  2 = kJ/mol;   3 = kcal/mol  4 = cal/mol
+
+! Particle component X gasification rates    Xsolid (Xs) -> Xgas (Xg)
+! Rate (kg/s) =   k * Xs^x * Y^y * Sp^s * (Mp/Mpo)^m
+! Xs = mass fraction of particle component X in solid particle
+! Y  = mass fraction of any relevant gas phase species eg O2 
+! Sp = particle surface area (m)
+! Mp/Mpo = particle mass/initial particle mass 
+
+!  rateconst k  = A * Tp^t  * EXP[-E /(Rgas*Tp)]  
+! Tp  = particle T
+
+ 
+! Species X   species Y           A      t     E           x      y       s       m    
+......................................................................
+--------------------------------------------------------------------------------
+
+
+
+

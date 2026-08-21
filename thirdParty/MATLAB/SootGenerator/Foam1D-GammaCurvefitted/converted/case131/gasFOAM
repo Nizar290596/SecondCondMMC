@@ -1,0 +1,379 @@
+elements
+5
+(
+O
+H
+C
+N
+Ar
+)
+;
+
+species
+45
+(
+N2
+Ar
+H
+H2
+A4-
+Ai_01_01_01_1
+Ai_02_01_01_1
+Ai_03_01_01_1
+Ai_04_01_01_1
+Ai_05_01_01_1
+Ai_06_01_01_1
+Ai_07_01_01_1
+Ai_08_01_01_1
+Ai_09_01_01_1
+Ai_10_01_01_1
+Ai_11_01_01_1
+Ai_12_01_01_1
+Ai_13_01_01_1
+Ai_14_01_01_1
+Ai_15_01_01_1
+Ai_16_01_01_1
+Ai_17_01_01_1
+Ai_18_01_01_1
+Ai_19_01_01_1
+Ai_20_01_01_1
+Ai_21_01_01_1 
+Ai_22_01_01_1 
+Ai_23_01_01_1 
+Ai_24_01_01_1 
+Ai_25_01_01_1 
+Ai_26_01_01_1 
+Ai_27_01_01_1 
+Ai_28_01_01_1 
+Ai_29_01_01_1 
+Ai_30_01_01_1 
+Ai_31_01_01_1 
+Ai_32_01_01_1 
+Ai_33_01_01_1 
+Ai_34_01_01_1 
+Ai_35_01_01_1 
+Ai_36_01_01_1 
+Ai_37_01_01_1 
+Ai_38_01_01_1 
+Ai_39_01_01_1 
+Ai_40_01_01_1 
+)
+;
+
+reactions
+{
+
+    un-named-reaction-243
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_01_01_01_1 + A4- =  0.571429 Ai_02_01_01_1  +  0.428571 Ai_03_01_01_1 + 4 H2 + H";
+        A            4.663877e+10;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-244
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_02_01_01_1 + A4- =  0.894737 Ai_03_01_01_1  +  0.105263 Ai_04_01_01_1 + 4 H2 + H";
+        A            5.727894e+10;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-245
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_03_01_01_1 + A4- =  0.157895 Ai_03_01_01_1  +  0.842105 Ai_04_01_01_1 + 4 H2 + H";
+        A            7.020286e+10;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-246
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_04_01_01_1 + A4- =  0.428571 Ai_04_01_01_1  +  0.571429 Ai_05_01_01_1 + 4 H2 + H";
+        A            8.546860e+10;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-247
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_05_01_01_1 + A4- =  0.589744 Ai_05_01_01_1  +  0.410256 Ai_06_01_01_1 + 4 H2 + H";
+        A            1.050218e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-248
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_06_01_01_1 + A4- =  0.709091 Ai_06_01_01_1  +  0.290909 Ai_07_01_01_1 + 4 H2 + H";
+        A            1.286513e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-249
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_07_01_01_1 + A4- =  0.792208 Ai_07_01_01_1  +  0.207792 Ai_08_01_01_1 + 4 H2 + H";
+        A            1.575923e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-250
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_08_01_01_1 + A4- =  0.853211 Ai_08_01_01_1  +  0.146789 Ai_09_01_01_1 + 4 H2 + H";
+        A            1.927980e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-251
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_09_01_01_1 + A4- =  0.896104 Ai_09_01_01_1  +  0.103896 Ai_10_01_01_1 + 4 H2 + H";
+        A            2.361027e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-252
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_10_01_01_1 + A4- =  0.925926 Ai_10_01_01_1  +  0.0740741 Ai_11_01_01_1 + 4 H2 + H";
+        A            2.892420e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-253
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_11_01_01_1 + A4- =  0.952239 Ai_11_01_01_1  +  0.0477612 Ai_12_01_01_1 + 4 H2 + H";
+        A            3.539930e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-254
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_12_01_01_1 + A4- =  0.96701 Ai_12_01_01_1  +  0.0329897 Ai_13_01_01_1 + 4 H2 + H";
+        A            4.406994e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-255
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_13_01_01_1 + A4- =  0.978864 Ai_13_01_01_1  +  0.0211361 Ai_14_01_01_1 + 4 H2 + H";
+        A            5.485117e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-256
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_14_01_01_1 + A4- =  0.98574 Ai_14_01_01_1  +  0.0142602 Ai_15_01_01_1 + 4 H2 + H";
+        A            6.922790e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-257
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_15_01_01_1 + A4- =  0.991006 Ai_15_01_01_1  +  0.00899382 Ai_16_01_01_1 + 4 H2 + H";
+        A            8.735539e+11;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-258
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_16_01_01_1 + A4- =  0.99407 Ai_16_01_01_1  +  0.00593032 Ai_17_01_01_1 + 4 H2 + H";
+        A            1.116851e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-259
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_17_01_01_1 + A4- =  0.996322 Ai_17_01_01_1  +  0.00367816 Ai_18_01_01_1 + 4 H2 + H";
+        A            1.427916e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-260
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_18_01_01_1 + A4- =  0.997626 Ai_18_01_01_1  +  0.00237424 Ai_19_01_01_1 + 4 H2 + H";
+        A            1.848679e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-261
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_19_01_01_1 + A4- =  0.998552 Ai_19_01_01_1  +  0.00144823 Ai_20_01_01_1 + 4 H2 + H";
+        A            2.393436e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-262
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_20_01_01_1 + A4- =  0.999084 Ai_20_01_01_1  +  0.000916013 Ai_21_01_01_1 + 4 H2 + H";
+        A            3.136309e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-263
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_21_01_01_1 + A4- =  0.99945 Ai_21_01_01_1  +  0.000549696 Ai_22_01_01_1 + 4 H2 + H";
+        A            4.109666e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-264
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_22_01_01_1 + A4- =  0.999659 Ai_22_01_01_1  +  0.000340912 Ai_23_01_01_1 + 4 H2 + H";
+        A            5.447841e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-265
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_23_01_01_1 + A4- =  0.999799 Ai_23_01_01_1  +  0.000201324 Ai_24_01_01_1 + 4 H2 + H";
+        A            7.221722e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-266
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_24_01_01_1 + A4- =  0.999877 Ai_24_01_01_1  +  0.000122523 Ai_25_01_01_1 + 4 H2 + H";
+        A            9.680423e+12;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-267
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_25_01_01_1 + A4- =  0.999929 Ai_25_01_01_1  +  7.1226e-05 Ai_26_01_01_1 + 4 H2 + H";
+        A            1.297617e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-268
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_26_01_01_1 + A4- =  0.999957 Ai_26_01_01_1  +  4.25656e-05 Ai_27_01_01_1 + 4 H2 + H";
+        A            1.758158e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-269
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_27_01_01_1 + A4- =  0.999976 Ai_27_01_01_1  +  2.4366e-05 Ai_28_01_01_1 + 4 H2 + H";
+        A            2.382151e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-270
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_28_01_01_1 + A4- =  0.999986 Ai_28_01_01_1  +  1.43082e-05 Ai_29_01_01_1 + 4 H2 + H";
+        A            3.261195e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-271
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_29_01_01_1 + A4- =  0.999992 Ai_29_01_01_1  +  8.06793e-06 Ai_30_01_01_1 + 4 H2 + H";
+        A            4.464617e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-272
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_30_01_01_1 + A4- =  0.999995 Ai_30_01_01_1  +  4.65802e-06 Ai_31_01_01_1 + 4 H2 + H";
+        A            6.173550e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-273
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_31_01_01_1 + A4- =  0.999997 Ai_31_01_01_1  +  2.58809e-06 Ai_32_01_01_1 + 4 H2 + H";
+        A            8.536617e+13;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-274
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_32_01_01_1 + A4- =  0.999999 Ai_32_01_01_1  +  1.46994e-06 Ai_33_01_01_1 + 4 H2 + H";
+        A            1.191894e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-275
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_33_01_01_1 + A4- =  0.999999 Ai_33_01_01_1  +  8.05051e-07 Ai_34_01_01_1 + 4 H2 + H";
+        A            1.664137e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-276
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_34_01_01_1 + A4- =  1 Ai_34_01_01_1  +  4.50037e-07 Ai_35_01_01_1 + 4 H2 + H";
+        A            2.345354e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-277
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_35_01_01_1 + A4- =  1 Ai_35_01_01_1  +  2.43034e-07 Ai_36_01_01_1 + 4 H2 + H";
+        A            3.305428e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-278
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_36_01_01_1 + A4- =  1 Ai_36_01_01_1  +  1.33786e-07 Ai_37_01_01_1 + 4 H2 + H";
+        A            4.700989e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-279
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_37_01_01_1 + A4- =  1 Ai_37_01_01_1  +  7.12625e-08 Ai_38_01_01_1 + 4 H2 + H";
+        A            6.685761e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-280
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_38_01_01_1 + A4- =  1 Ai_38_01_01_1  +  3.86475e-08 Ai_39_01_01_1 + 4 H2 + H";
+        A            9.592618e+14;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+    un-named-reaction-281
+    {
+        type            irreversibleArrheniusReaction;
+        reaction        "Ai_39_01_01_1 + A4- =  1 Ai_39_01_01_1  +  2.09596e-08 Ai_40_01_01_1 + 4 H2 + H";
+        A            1.376333e+15;
+        beta            0.500000;
+        Ta            7548.293473;
+    }
+}
+

@@ -1,0 +1,23 @@
+PARCELS=parcels
+BASEPARCELS=$(PARCELS)/baseClasses
+DERIVEDPARCELS=$(PARCELS)/derived
+
+CLOUDS=clouds
+BASECLOUDS=$(CLOUDS)/baseClasses
+DERIVEDCLOUDS=$(CLOUDS)/derived
+
+/* thermo parcel sub-models */
+$(DERIVEDPARCELS)/basicSprayThermoParcel/defineBasicSprayThermoParcel.C
+$(DERIVEDPARCELS)/basicSprayThermoParcel/makeBasicSprayThermoParcelSubmodels.C
+
+$(DERIVEDPARCELS)/basicDropletSprayThermoParcel/defineBasicDropletSprayThermoParcel.C
+$(DERIVEDPARCELS)/basicDropletSprayThermoParcel/makeBasicDropletSprayThermoParcelSubmodels.C
+
+$(DERIVEDPARCELS)/basicDropletSprayDNSThermoParcel/defineBasicDropletSprayDNSThermoParcel.C
+$(DERIVEDPARCELS)/basicDropletSprayDNSThermoParcel/makeBasicDropletSprayDNSThermoParcelSubmodels.C
+
+/* Injection Models */
+INJECTIONMODEL=submodels/Kinematic/InjectionModel/
+$(INJECTIONMODEL)/MassFluxBasedPatchInjection/massFluxBasedPatchInjectionBase.C
+
+LIB = $(FOAM_USER_LIBBIN)/libmmcLagrangianSpray$(MMC_APPLICATION_EXTENSION)

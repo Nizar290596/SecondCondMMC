@@ -1,0 +1,119 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      binary;
+    arch        "LSB;label=32;scalar=64";
+    class       dictionary;
+    location    "constant";
+    object      cloudProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solution
+{
+    interpolationSchemes
+    {
+        U               cellPoint;
+        DEff            cellPoint;
+        rho             cellPoint;
+        gradRho         cellPoint;
+        gradRhoDEff     cellPoint;
+        f               cellPoint;
+        p               cellPoint;
+    }
+}
+
+particleManagement
+{
+    numCtlOn        on;
+    Npc             10;
+    Nlo             8;
+    Nhi             14;
+}
+
+subModels
+{
+    InflowBoundaryModel NoInflow;
+    compositionModel singlePhaseMixture;
+    radiationModel  OpticallyThinRadiation;
+    OpticallyThinRadiationCoeffs
+    {
+        TRef            300;
+    }
+    printMoleFractions false;
+    thermoPhysicalCouplingModel FlameletCurves;
+    KernelEstimationCoeffs
+    {
+        fLow            0.03;
+        fHigh           0.19;
+        fm              0.01;
+        condVariable    f;
+        dfMax           0.0075;
+        C2              0.1;
+    }
+    sootModel       none;
+    mixingModel     MMCcurl;
+    MMCcurlCoeffs
+    {
+        ri              0.0067;
+        Ximi
+        {
+            fm              0.03;
+        }
+        localnessLimited false;
+        fLowMixOnMaster 0.01;
+        fHighMixOnMaster 1;
+        fullSort        false;
+        aISO            true;
+        meanTimeScale   true;
+    }
+    reactionModel   finiteRateParticleChemistry;
+    finiteRateParticleChemistryCoeffs
+    {
+        zLower          0.1;
+        zUpper          0.9;
+    }
+}
+
+thermophysicalCoupling
+{
+    enabled         true;
+    CH4             ;
+    O2              ;
+    CO2             ;
+    H2O             ;
+    condVariable    z;
+    primarySpecies  CO2;
+    tauRelaxBlending false;
+    tauRelaxStart   1000;
+    tauRelaxDelta   2;
+    tauRelax        10;
+    tauUnits        timestep;
+}
+
+eulerianStatistics
+{
+    enabled         false;
+    axisymmetric    false;
+    symmetryPlane   zx;
+}
+
+particleSampling
+{
+    enabled         false;
+    parallelSampling false;
+    numParticlesToStore 1000;
+    particleSampleProbes
+    {
+    }
+}
+
+
+// ************************************************************************* //

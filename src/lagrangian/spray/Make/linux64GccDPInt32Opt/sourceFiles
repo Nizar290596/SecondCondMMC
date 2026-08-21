@@ -1,0 +1,10 @@
+SOURCE = \
+$(DERIVEDPARCELS)/basicSprayThermoParcel/defineBasicSprayThermoParcel.C \
+$(DERIVEDPARCELS)/basicSprayThermoParcel/makeBasicSprayThermoParcelSubmodels.C \
+$(DERIVEDPARCELS)/basicDropletSprayThermoParcel/defineBasicDropletSprayThermoParcel.C \
+$(DERIVEDPARCELS)/basicDropletSprayThermoParcel/makeBasicDropletSprayThermoParcelSubmodels.C \
+$(DERIVEDPARCELS)/basicDropletSprayDNSThermoParcel/defineBasicDropletSprayDNSThermoParcel.C \
+$(DERIVEDPARCELS)/basicDropletSprayDNSThermoParcel/makeBasicDropletSprayDNSThermoParcelSubmodels.C \
+$(INJECTIONMODEL)/MassFluxBasedPatchInjection/massFluxBasedPatchInjectionBase.C \
+
+# sources

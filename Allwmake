@@ -1,0 +1,48 @@
+#!/bin/bash
+cd ${0%/*} || exit 1    # run from this directory
+
+# source mmcFoam bashrc
+source etc/bashrc
+
+# source all support functions 
+source etc/supportFunctions.sh
+
+__printMMCBanner
+__checkOpenFOAMEnvironment
+__checkOpenFOAMVersion
+__checkGitSubmodule
+
+# ============================================================
+# Print a help message 
+# ============================================================
+if [[ $# -ge 1 ]]; then
+    # Option to set debug flag
+    if [[ ${1} == "--help" ]] || [[ ${1} == "-h" ]]; then
+        __banner Allwmake usage
+        echo "Script to compile mmcFoam for OpenFOAM version $MMC_OPENFOAM_VERSION"
+        echo "All OpenFOAM options can be given here as a command line argument"
+        wmake -h
+        exit 1
+    fi
+fi
+
+# Set script to abort on any command that results an error status
+trap '__abort' 0
+set -e
+
+# ============================================================
+# Build libraries and applications
+# ============================================================
+__banner Compile thirdParty/
+thirdParty/Allwmake ${@} > log.compile 
+
+__banner Compile src/
+src/Allwmake ${@} >> log.compile
+
+__banner Compile applications/
+applications/Allwmake ${@} >> log.compile
+
+__banner Finished
+
+trap : 0
+# ----------------------------------------------------------------- end-of-file

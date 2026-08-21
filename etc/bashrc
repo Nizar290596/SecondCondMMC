@@ -1,0 +1,92 @@
+#----------------------------------*-sh-*--------------------------------------
+#                                       8888888888                              
+#                                       888                                     
+#                                       888                                     
+#  88888b.d88b.  88888b.d88b.   .d8888b 8888888  .d88b.   8888b.  88888b.d88b.  
+#  888 "888 "88b 888 "888 "88b d88P"    888     d88""88b     "88b 888 "888 "88b 
+#  888  888  888 888  888  888 888      888     888  888 .d888888 888  888  888 
+#  888  888  888 888  888  888 Y88b.    888     Y88..88P 888  888 888  888  888 
+#  888  888  888 888  888  888  "Y8888P 888      "Y88P"  "Y888888 888  888  888 
+#------------------------------------------------------------------------------- 
+#
+#License
+#    This file is part of mmcFoam.
+#
+#    mmcFoam is free software: you can redistribute it and/or modify it
+#    under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    mmcFoam is distributed in the hope that it will be useful, but 
+#    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+#    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#    for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with  mmcFoam.  If not, see <http://www.gnu.org/licenses/>.
+#------------------------------------------------------------------------------
+
+export MMC_PROJECT=mmcFoam
+
+export MMC_OPENFOAM_VERSION=v2406
+
+export MMC_PROJECT_USER_DIR=$(cd $(dirname ${BASH_SOURCE:-$0})/.. && pwd -P) || \
+export MMC_PROJECT_USER_DIR=$HOME/$WM_PROJECT/$USER-$WM_PROJECT_VERSION/$MMC_PROJECT-$WM_PROJECT_VERSION
+
+# Export a list of OpenFOAM patches that must be included in the current OpenFOAM
+# version
+export MMC_OPENFOAM_PATCHES=("52b530fb8269ab244b08826acd297e4df22fe00d" # Commit for fixing boundaryField problem
+    )
+
+
+# Source the moving average library
+if [[ ! -e ${MMC_PROJECT_USER_DIR}/thirdParty/movingAverage/.git ]]; then
+    export MOVEAVE_PROJECT="MovingAverage-DummyLibrary"
+    export MOVEAVE_PROJECT_DIR="${MMC_PROJECT_USER_DIR}/thirdParty/movingAverageDummy/"
+    export MOVEAVE_INCLUDE_DIR="${MMC_PROJECT_USER_DIR}/thirdParty/movingAverageDummy/"
+else
+    source ${MMC_PROJECT_USER_DIR}/thirdParty/movingAverage/etc/movingAverageEnvironment.sh    
+fi
+
+
+# Check if it is a valid git repository 
+IS_GIT=$(cd ${MMC_PROJECT_USER_DIR} && git rev-parse --is-inside-work-tree 2>/dev/null || echo "NO_GIT")
+
+if [[ ${IS_GIT} == "NO_GIT" ]]; then
+    export MMC_APPLICATION_EXTENSION=""
+    export GIT_BRANCH="NO_GIT_REPO"
+    export GIT_BUILD="NO_GIT_REPO"
+else
+    # Check if the current commit is modified:
+    NUM_MODIFIED_FILES=$(cd ${MMC_PROJECT_USER_DIR} && git diff-index --name-only HEAD | wc -l)
+    IS_MODIFIED=""
+    if [[ $NUM_MODIFIED_FILES > 0 ]]; then
+        IS_MODIFIED="-modified"
+    fi
+
+    # --- Get the GIT HASH and GIT BUILT Information
+
+    # Is it a development version
+    export GIT_BRANCH=$(cd ${MMC_PROJECT_USER_DIR} && git rev-parse --abbrev-ref HEAD)
+    GIT_BUILD=$(cd ${MMC_PROJECT_USER_DIR} && git rev-parse --short HEAD)
+    export GIT_BUILD="${GIT_BUILD}${IS_MODIFIED}"
+
+    GIT_TAG=$(cd ${MMC_PROJECT_USER_DIR} && git describe --exact-match HEAD 2>/dev/null || echo "")
+
+    if [[ ! -z $GIT_TAG ]]; then
+        GIT_BRANCH=$GIT_TAG
+    fi
+ 
+
+    # The extension to add to the name of the solvers
+    # if it is the master branch it is bare, e.g. mmcFoam
+    # if you use a checked out version tag or branch it adds it 
+    # to the name 
+    if [[ $GIT_BRANCH == "master" ]]; then
+        export MMC_APPLICATION_EXTENSION=""
+    else
+        export MMC_APPLICATION_EXTENSION="-${GIT_BRANCH}"
+    fi
+fi
+
+#-----------------------------------------------------------------------------

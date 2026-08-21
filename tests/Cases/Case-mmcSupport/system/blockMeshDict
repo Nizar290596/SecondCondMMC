@@ -1,0 +1,195 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+ * | =========                 |                                                 |
+ * | \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+ * |  \\    /   O peration     | Version:  1.7.1                                 |
+ * |   \\  /    A nd           | Web:      www.OpenFOAM.com                      |
+ * |    \\/     M anipulation  |                                                 |
+ * \*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    object      blockMeshDict;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+scale 1.0; 
+
+mergeType points;
+
+
+pi              3.141592653589793;
+radPiQuarter    #calc "$pi/4";
+
+D               1.0;
+
+// geometry ##################################################################################
+
+// length of domainOutlet
+domainInlet          0;
+domainOutlet         #calc "4*$D";
+
+inletOutletDistance  #calc "$domainOutlet";
+MinletOutletDistance #calc "-$inletOutletDistance";
+
+// core block inside nozzle
+coreBlock            #calc "0.42*$D";
+McoreBlock           #calc "-$coreBlock";
+
+// domainOutlet radius 
+radius               #calc "0.5*$D";
+Mradius              #calc "-$radius";
+
+// interpolation coordinates for circular edges (cos(45°)*radius)
+
+circCoreBlock        #calc "0.97*$coreBlock*cos($radPiQuarter)";
+McircCoreBlock       #calc "-$circCoreBlock";
+
+circRadius           #calc "$radius*cos($radPiQuarter)";
+McircRadius          #calc "-$circRadius";
+
+// mesh resolution and stretching ############################################################
+
+// centerblock resolution
+Ncent 10;
+
+// radial resolution
+nRadialCells    10; // number of radial cells 
+rRadialCells    0.1; 
+
+// axial resolution
+nAxialCells     50; // number of axial cells 
+sAxialCells     1; 
+
+// vertices ##################################################################################
+
+vertices
+(
+    // inlet
+    
+    // coreBlock
+    ($coreBlock         0.0             $domainInlet) // 0
+    (0.0                $coreBlock      $domainInlet) // 1  
+    ($McoreBlock        0.0             $domainInlet) // 2
+    (0.0                $McoreBlock     $domainInlet) // 3 
+    
+    // inner nozzle edge
+    ($radius            0.0             $domainInlet) // 4
+    (0.0                $radius         $domainInlet) // 5  
+    ($Mradius           0.0             $domainInlet) // 6
+    (0.0                $Mradius        $domainInlet) // 7 
+        
+    // top
+    
+    // coreBlock   
+    ($coreBlock         0.0             $domainOutlet)  // 8
+    (0.0                $coreBlock      $domainOutlet)  // 9  
+    ($McoreBlock        0.0             $domainOutlet)  // 10
+    (0.0                $McoreBlock     $domainOutlet)  // 11
+    
+    // inner nozzle edge
+    ($radius            0.0             $domainOutlet)  // 12
+    (0.0                $radius         $domainOutlet)  // 13  
+    ($Mradius           0.0             $domainOutlet)  // 14
+    (0.0                $Mradius        $domainOutlet)  // 15    
+);
+
+// edges #####################################################################################
+
+edges
+(
+    //bottom
+    arc 0 1   ($circCoreBlock     $circCoreBlock       $domainInlet)
+    arc 1 2   ($McircCoreBlock    $circCoreBlock       $domainInlet)
+    arc 2 3   ($McircCoreBlock    $McircCoreBlock      $domainInlet)
+    arc 3 0   ($circCoreBlock     $McircCoreBlock      $domainInlet)
+    
+    arc 4 5   ($circRadius        $circRadius          $domainInlet)
+    arc 5 6   ($McircRadius       $circRadius          $domainInlet)
+    arc 6 7   ($McircRadius       $McircRadius         $domainInlet)
+    arc 7 4   ($circRadius        $McircRadius         $domainInlet)
+   
+    //top
+    arc 8 9   ($circCoreBlock     $circCoreBlock       $domainOutlet)
+    arc 9 10  ($McircCoreBlock    $circCoreBlock       $domainOutlet)
+    arc 10 11 ($McircCoreBlock    $McircCoreBlock      $domainOutlet)
+    arc 11 8  ($circCoreBlock     $McircCoreBlock      $domainOutlet)
+    
+    arc 12 13 ($circRadius        $circRadius          $domainOutlet)
+    arc 13 14 ($McircRadius       $circRadius          $domainOutlet)
+    arc 14 15 ($McircRadius       $McircRadius         $domainOutlet)
+    arc 15 12 ($circRadius        $McircRadius         $domainOutlet)
+);
+
+// block definitions #########################################################################
+
+blocks
+(
+    // center block 
+    hex (0 1 2 3 8 9 10 11)       ($Ncent $Ncent $nAxialCells)          simpleGrading (1 1 $sAxialCells)
+    
+    // circular blocks
+    hex (0 4 5 1  8 12 13  9)     ($nRadialCells $Ncent $nAxialCells)   simpleGrading ($rRadialCells 1 $sAxialCells)  
+    hex (1 5 6 2  9 13 14 10)     ($nRadialCells $Ncent $nAxialCells)   simpleGrading ($rRadialCells 1 $sAxialCells)  
+    hex (2 6 7 3 10 14 15 11)     ($nRadialCells $Ncent $nAxialCells)   simpleGrading ($rRadialCells 1 $sAxialCells)
+    hex (3 7 4 0 11 15 12 8 )     ($nRadialCells $Ncent $nAxialCells)   simpleGrading ($rRadialCells 1 $sAxialCells)
+);
+
+// patch definitions #########################################################################
+
+boundary
+(    
+    inlet
+    {
+        //type inlet;
+        type cyclic;
+        neighbourPatch outlet;
+        
+        faces
+        (
+            (0  1  2  3)
+            (0  4  5  1)
+            (1  5  6  2)
+            (2  6  7  3)
+            (3  7  4  0)
+        );
+        
+        transform translational;
+        separationVector (0 0 $inletOutletDistance);
+    }
+    
+    wall
+    {
+        type wall; 
+        
+        faces
+        (
+            (4 12 13 5)
+            (5 13 14 6)
+            (6 14 15 7)
+            (7 15 12 4)
+        );
+    }
+    
+    outlet
+    {
+        //type outlet;
+        type cyclic;
+        neighbourPatch inlet;
+        
+        faces
+        (
+            (8  9  10 11)
+            (8  12 13  9)
+            (9  13 14 10)
+            (10 14 15 11)
+            (11 15 12  8)
+        );
+        
+        transform translational;
+        separationVector (0 0 $MinletOutletDistance);
+    }
+);
+
+/// ************************************************************************* //

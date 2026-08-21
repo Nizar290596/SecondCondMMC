@@ -1,0 +1,3 @@
+mmcRansFoam.C
+
+EXE = $(FOAM_USER_APPBIN)/mmcRansFoam${MMC_APPLICATION_EXTENSION}

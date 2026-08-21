@@ -1,0 +1,13 @@
+syntheticTurbulence=syntheticTurbulence
+
+$(syntheticTurbulence)/syntheticTurbulence/syntheticTurbulence.C
+$(syntheticTurbulence)/syntheticTurbulence/generateSyntheticFluctuations.C
+
+$(syntheticTurbulence)/turbulentLengthScale/uniform/uniformLengthScale.C
+$(syntheticTurbulence)/turbulentLengthScale/generic/genericLengthScale.C
+$(syntheticTurbulence)/turbulentLengthScale/kw/kwLengthScale.C
+$(syntheticTurbulence)/turbulentLengthScale/turbulentLengthScale/turbulentLengthScale.C
+
+$(syntheticTurbulence)/syntheticTurbulenceInletFvPatchField/syntheticTurbulenceInletFvPatchField.C
+
+LIB = $(FOAM_USER_LIBBIN)/libsyntheticTurbulenceUMeanControl_modif

@@ -1,0 +1,33 @@
+SOURCE = \
+$(BASECLOUDS)/itoPopeCloud/itoPopeCloud.C \
+$(BASECLOUDS)/thermoPopeCloud/thermoPopeCloud.C \
+$(BASECLOUDS)/sootPopeCloud/sootPopeCloud.C \
+$(BASECLOUDS)/aerosolPopeCloud/aerosolPopeCloud.C \
+$(BASECLOUDS)/mixingPopeCloud/mixingPopeCloud.C \
+$(BASECLOUDS)/reactingPopeCloud/reactingPopeCloud.C \
+$(ITOPOPEPARTICLE)/defineBasicItoPopeParticle.C \
+$(ITOPOPEPARTICLE)/makeBasicItoPopeParticleSubmodels.C \
+$(THERMOPOPEPARTICLE)/defineBasicThermoPopeParticle.C \
+$(THERMOPOPEPARTICLE)/makeBasicThermoPopeParticleSubmodels.C \
+$(SOOTPOPEPARTICLE)/defineBasicSootPopeParticle.C \
+$(SOOTPOPEPARTICLE)/makeBasicSootPopeParticleSubmodels.C \
+$(AEROSOLPOPEPARTICLE)/defineBasicAerosolPopeParticle.C \
+$(AEROSOLPOPEPARTICLE)/makeBasicAerosolPopeParticleSubmodels.C \
+$(MIXINGPOPEPARTICLE)/defineBasicMixingPopeParticle.C \
+$(MIXINGPOPEPARTICLE)/makeBasicMixingPopeParticleSubmodels.C \
+$(MIXINGMODELS)/particlePairingMethod.C \
+$(MIXINGMODELS)/mixingSubVolumes.C \
+$(AEROSOLMIXINGPOPEPARTICLE)/defineBasicAerosolMixingPopeParticle.C \
+$(AEROSOLMIXINGPOPEPARTICLE)/makeBasicAerosolMixingPopeParticleSubmodels.C \
+$(PREMIXEDMIXINGPOPEPARTICLE)/defineBasicPremixedMixingPopeParticle.C \
+$(PREMIXEDMIXINGPOPEPARTICLE)/makeBasicPremixedMixingPopeParticleSubmodels.C \
+$(REACTINGPOPEPARTICLE)/defineBasicReactingPopeParticle.C \
+$(REACTINGPOPEPARTICLE)/makeBasicReactingPopeParticleSubmodels.C \
+$(AEROSOLREACTINGPOPEPARTICLE)/defineBasicAerosolReactingPopeParticle.C \
+$(AEROSOLREACTINGPOPEPARTICLE)/makeBasicAerosolReactingPopeParticleSubmodels.C \
+$(PREMIXEDREACTINGPOPEPARTICLE)/defineBasicPremixedReactingPopeParticle.C \
+$(PREMIXEDREACTINGPOPEPARTICLE)/makeBasicPremixedReactingPopeParticleSubmodels.C \
+clouds/Templates/ItoPopeCloud/popeCloudSolution/popeCloudSolution.C \
+clouds/Templates/ItoPopeCloud/particleNumberController/particleNumberController.C \
+
+# sources

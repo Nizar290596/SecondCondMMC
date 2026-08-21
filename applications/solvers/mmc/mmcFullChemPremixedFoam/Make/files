@@ -1,0 +1,3 @@
+mmcFullChemPremixedFoam.C
+
+EXE = $(FOAM_USER_APPBIN)/mmcFullChemPremixedFoam$(MMC_APPLICATION_EXTENSION)

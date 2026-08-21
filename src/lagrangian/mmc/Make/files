@@ -1,0 +1,82 @@
+PARTICLES=popeParticles
+BASEPARTICLES=$(PARTICLES)/baseClasses
+DERIVEDPARTICLES=$(PARTICLES)/derived
+
+PARTICLESPREMIXED=popeParticlesPremixed
+DERIVEDPARTICLESPREMIXED=$(PARTICLESPREMIXED)/derived
+
+CLOUDS=clouds
+BASECLOUDS=$(CLOUDS)/baseClasses
+DERIVEDCLOUDS=$(CLOUDS)/derived
+
+/* Cloud base classes */
+$(BASECLOUDS)/itoPopeCloud/itoPopeCloud.C
+$(BASECLOUDS)/thermoPopeCloud/thermoPopeCloud.C
+$(BASECLOUDS)/sootPopeCloud/sootPopeCloud.C
+$(BASECLOUDS)/aerosolPopeCloud/aerosolPopeCloud.C
+$(BASECLOUDS)/mixingPopeCloud/mixingPopeCloud.C
+$(BASECLOUDS)/reactingPopeCloud/reactingPopeCloud.C
+
+/* Ito Particle sub-models*/
+ITOPOPEPARTICLE=$(DERIVEDPARTICLES)/basicItoPopeParticle
+$(ITOPOPEPARTICLE)/defineBasicItoPopeParticle.C
+$(ITOPOPEPARTICLE)/makeBasicItoPopeParticleSubmodels.C
+
+/* Thermo Particle sub-models*/
+THERMOPOPEPARTICLE=$(DERIVEDPARTICLES)/basicThermoPopeParticle
+$(THERMOPOPEPARTICLE)/defineBasicThermoPopeParticle.C
+$(THERMOPOPEPARTICLE)/makeBasicThermoPopeParticleSubmodels.C
+
+/* Soot Particle sub-models*/
+SOOTPOPEPARTICLE=$(DERIVEDPARTICLES)/basicSootPopeParticle
+$(SOOTPOPEPARTICLE)/defineBasicSootPopeParticle.C
+$(SOOTPOPEPARTICLE)/makeBasicSootPopeParticleSubmodels.C
+
+/* Aerosol Particle sub-models*/
+AEROSOLPOPEPARTICLE=$(DERIVEDPARTICLES)/basicAerosolPopeParticle
+$(AEROSOLPOPEPARTICLE)/defineBasicAerosolPopeParticle.C
+$(AEROSOLPOPEPARTICLE)/makeBasicAerosolPopeParticleSubmodels.C
+
+/* Mixing Particle sub-models*/
+MIXINGPOPEPARTICLE=$(DERIVEDPARTICLES)/basicMixingPopeParticle
+$(MIXINGPOPEPARTICLE)/defineBasicMixingPopeParticle.C
+$(MIXINGPOPEPARTICLE)/makeBasicMixingPopeParticleSubmodels.C
+
+/* Mixing helper classes */
+MIXINGMODELS=submodels/Mixing/MixingModel/ParticleInteractionModels/sparseParticleModel/
+$(MIXINGMODELS)/particlePairingMethod.C
+$(MIXINGMODELS)/mixingSubVolumes.C
+
+/* Aerosol Mixing Particle sub-models*/
+AEROSOLMIXINGPOPEPARTICLE=$(DERIVEDPARTICLES)/basicAerosolMixingPopeParticle
+$(AEROSOLMIXINGPOPEPARTICLE)/defineBasicAerosolMixingPopeParticle.C
+$(AEROSOLMIXINGPOPEPARTICLE)/makeBasicAerosolMixingPopeParticleSubmodels.C
+
+/* Premixed Mixing Particle sub-models*/
+PREMIXEDMIXINGPOPEPARTICLE=$(DERIVEDPARTICLESPREMIXED)/basicPremixedMixingPopeParticle
+$(PREMIXEDMIXINGPOPEPARTICLE)/defineBasicPremixedMixingPopeParticle.C
+$(PREMIXEDMIXINGPOPEPARTICLE)/makeBasicPremixedMixingPopeParticleSubmodels.C
+
+/* Reacting Particle sub-models*/
+REACTINGPOPEPARTICLE=$(DERIVEDPARTICLES)/basicReactingPopeParticle
+$(REACTINGPOPEPARTICLE)/defineBasicReactingPopeParticle.C
+$(REACTINGPOPEPARTICLE)/makeBasicReactingPopeParticleSubmodels.C
+ 
+/* Aerosol Reacting Particle sub-models*/
+AEROSOLREACTINGPOPEPARTICLE=$(DERIVEDPARTICLES)/basicAerosolReactingPopeParticle
+$(AEROSOLREACTINGPOPEPARTICLE)/defineBasicAerosolReactingPopeParticle.C
+$(AEROSOLREACTINGPOPEPARTICLE)/makeBasicAerosolReactingPopeParticleSubmodels.C
+
+/* Premixed Reacting Particle sub-models*/
+PREMIXEDREACTINGPOPEPARTICLE=$(DERIVEDPARTICLESPREMIXED)/basicPremixedReactingPopeParticle
+$(PREMIXEDREACTINGPOPEPARTICLE)/defineBasicPremixedReactingPopeParticle.C
+$(PREMIXEDREACTINGPOPEPARTICLE)/makeBasicPremixedReactingPopeParticleSubmodels.C
+
+/* Additional helper classes */
+clouds/Templates/ItoPopeCloud/popeCloudSolution/popeCloudSolution.C
+
+/* Super Mesh Manager*/
+clouds/Templates/ItoPopeCloud/particleNumberController/particleNumberController.C
+
+LIB = $(FOAM_USER_LIBBIN)/libppParticle$(MMC_APPLICATION_EXTENSION)
+

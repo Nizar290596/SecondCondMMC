@@ -1,0 +1,53 @@
+
+
+    GENPOL Version    6.3
+    Copyright 2001 - 2013  J.H. KENT, Compuflow Solutions, Sydney, Australia.
+    All rights reserved. 
+
+
+
+
+   INPUT FILE  sectional/sectionalSettings.in                                                                                                                                                                                                                                  
+
+
+                     GENPOL 
+
+
+
+ Unsteady for all runs.
+ Iterations/time step              =     10
+ Skip tolerance (single grid cells only) =    0.100E-02
+
+ -------------------------------------------------------------------------------
+
+ Laminar flame with full chemistry. 
+
+ -------------------------------------------------------------------------------
+
+    Program Control
+
+   Trajectories   Dispersion   Combustion      Radiation
+      F              F              T              F
+
+ -------------------------------------------------------------------------------
+
+  Input temperatures in DEGREES KELVIN     
+  Output temperatures in DEGREES KELVIN     
+
+SPECIES OUTPUT UNITS are: mol/mol   
+
+ Phimax threshold for normalised residuals res/phimax is    0.100E-08
+
+ Fraction of phi movement down, fraction of phimagnitude movement up     0.00        0.00    
+
+ NO restriction on phi movement down.
+
+ NO restriction on phi movement up.
+
+ Species URF default      1.00000
+
+ Thermo data, default Tcommon is   1000.
+
+ dfdQ Allocations 
+ nqlasta         463
+ nqsp1a           10

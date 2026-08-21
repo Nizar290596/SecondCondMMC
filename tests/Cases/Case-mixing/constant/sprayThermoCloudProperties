@@ -1,0 +1,225 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  5.x                                   |
+|   \\  /    A nd           | Web:      www.OpenFOAM.org                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      ascii;
+    class       dictionary;
+    location    "constant";
+    object     fuelCloud1Properties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solution
+{
+    active          true;
+    coupled         true;
+    transient       yes;
+    cellValueSourceCorrection on;
+    sourceTerms
+    {
+        schemes
+        {
+            rho             explicit 1;
+            U               explicit 1;
+            Yi              explicit 1;
+            h               explicit 1;
+            radiation       explicit 1;
+        }
+    }
+
+    interpolationSchemes
+    {
+        rho             cell;
+        U               cellPoint;
+	    thermo:mu 	    cell;
+        muEff		    cell;
+        f               cellPoint; 
+        T               cell;
+        Cp              cell;
+        p               cell;      
+        magSqrGradf     cell;
+    
+
+    }
+
+    integrationSchemes
+    {
+        U               Euler;
+        TD              Euler;
+        mD              Euler;
+    }
+}
+
+// Fuel Composition
+composition
+{
+    CH3COCH3     1.0;  //Acetone
+}
+
+
+constantProperties
+{
+    rho0            791;
+    T0              293;
+    TMin            250.00;
+    TMax            322.00;
+    Sc              0.7;
+    Le              1.0;    
+    latentHeat      518000; 
+    molWtSstate0    58.08;    
+}
+
+
+subModels
+{
+	CpModel        ConstantCp;   // PolynomialCp
+    ConstantCpCoeffs
+    {
+        CpD        2161;  //[J/Kg K]
+    }
+
+    radiationModel   none;  //OpticallyThinRadiation;
+	OpticallyThinRadiationCoeffs
+	{
+		TRef       300;
+	}
+
+
+    particleForces
+    {
+        sphereDrag;
+    }
+
+    injectionModels
+    {
+        model1
+        {
+            type            patchInjection;
+            SOI             0.000;
+            massTotal       3.0e-04;
+            parcelBasisType mass;
+            patchName       inletJet;
+            duration        1;
+            parcelsPerSecond 1e6;
+            U0              (0 0 24);
+    	    localVelocityFraction	1.0;
+            flowRateProfile constant 1;
+            sizeDistribution
+            {
+                type        general;
+                generalDistribution
+                {
+                    distribution
+                    (
+                        (	1E-06	0	        )
+                        (	5E-06	0.0097303315	)
+                        (	10E-06	0.1577860284	)
+                        (	20E-06	0.3807902148	)
+                        (	30E-06	0.2461826773	)
+                        (	40E-06	0.1184642046	)
+                        (	50E-06	0.0474677965	)
+                        (	60E-06	0.0254227896	)
+                        (	70E-06	0.0121761384	)
+                        (	80E-06	0.0018387631	)
+                        (	90E-06	0.0001309804	)
+                        (	100E-06	1.0075411E-005	)
+                    );
+                }
+            }
+        }
+    }
+
+   
+    patchInteractionModel standardWallInteraction;
+    standardWallInteractionCoeffs
+    {
+        type            escape;  //rebound;
+    }
+
+  
+    evaporationModel  ClausiusClapeyron;
+	ClausiusClapeyronCoeffs
+	{
+	    Tb              329.0;
+	    Rgas            8314.0;
+	    CH3COCH3        1.0;
+        pRef            101325.0;
+	}
+
+	envelopeModel    none;// equilibriumApproximation;
+} 
+
+//- Parcels diameter control
+parcelManagement
+{
+    
+    dMin        10e-6;
+}
+
+
+// Calculate fuel particle statistics on the fly
+eulerianStatistics
+{
+    enabled           false; 
+    sampleInterval    10;
+    axisymmetric      true;
+    symmetryPlane     zy;
+    
+    // Axial Particle Velocity --> w
+    w
+    (
+    (1e-06      10e-06)
+	(10e-06     20e-06)
+	(20e-06     30e-06)
+	(30e-06     40e-06)
+	(40e-06     50e-06)
+	(50e-06     60e-06)
+	(60e-06     70e-06)
+	(70e-06     80e-06)
+    );
+}
+
+parcelSampling
+{
+    enabled             false;
+    numParcelsToStore   10000000;
+    sampleInterval      10;
+
+    // defines the thickness of the spanned volume in normal direction
+    sampleWidth         0.0005; // in m
+
+    // only used in parallel mode
+    // false:   particle data will be gathered on master node and then be written to ascii data
+    // true:    if probe is located within one rank only, gathering will be ommited (which may gives speedup)
+    parallelSampling    false;
+
+    parcelSampleProbes
+    {
+        zD10
+        {
+            origin      (0 0 0.105);
+            normal      (0 0 1);
+        }
+
+        zD20
+        {
+            origin      (0 0 0.21);
+            normal      (0 0 1);
+        }
+
+	    zD30
+        {
+            origin      (0 0 0.315);
+            normal      (0 0 1);
+        }
+
+    }
+}
+
+// ************************************************************************* //

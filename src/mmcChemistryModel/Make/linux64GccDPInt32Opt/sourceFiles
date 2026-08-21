@@ -1,0 +1,8 @@
+SOURCE = \
+particleChemistryModel/makeParticleChemistryModels.C \
+particleTDACChemistryModel/makeParticleTDACChemistryModels.C \
+particleTDACChemistryModel/reduction/makeParticleChemistryReductionMethods.C \
+particleTDACChemistryModel/tabulation/makeParticleChemistryTabulationMethods.C \
+particleChemistrySolver/makeParticleChemistrySolvers.C \
+
+# sources

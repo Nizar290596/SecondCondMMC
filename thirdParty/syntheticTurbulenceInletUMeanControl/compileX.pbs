@@ -1,0 +1,37 @@
+#!/bin/bash
+#PBS -N compile
+#PBS -j oe
+#PBS -l nodes=1:ppn=24,walltime=00:50:00
+
+source ${MODULESHOME}/init/bash
+myenv=$(echo $PE_ENV | tr '[:upper:]' '[:lower:]')
+#module sw PrgEnv-${myenv} PrgEnv-gnu
+#module load cae/openfoam/2.3.0
+#module load perftools-base
+#module load cae/openfoam/5.x_64
+#module unload cray-trilinos
+#module sw gcc gcc/5.3.0
+#module sw cray-mpich cray-mpich/7.3.3
+#module load cray-tpsl/16.03.1
+#module load craype-hugepages64M
+
+#module load perftools
+
+if [ -n "$PBS_O_WORKDIR" ]; then
+        cd $PBS_O_WORKDIR
+fi
+
+#source ~/OpenFOAM/OpenFOAM-5.x/etc/bashrc
+
+date
+
+#module load perftools-base
+#module load perftools
+#module load perftools-lite
+
+#wclean 
+#wmake > logmake 2>&1
+wmake
+#pat_build -o $FOAM_USER_APPBIN/reactingDNSFoam+pat -S -f -Dlink-instr=-L$FOAM_LIBBIN/cray_mpich,-IPstream $FOAM_USER_APPBIN/reactingDNSFoam
+
+#pat_build -o $FOAM_USER_APPBIN/<exe>+pat           -S -f -Dlink-instr=-L$FOAM_LIBBIN/cray_mpich,-IPstream <exe>

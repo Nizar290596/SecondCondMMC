@@ -1,0 +1,47 @@
+#!/bin/bash
+cd ${0%/*} || exit 1    # run from this directory
+
+# Source the mmcFoam bashrc
+. ../etc/bashrc
+
+# source all support functions 
+source ../etc/supportFunctions.sh
+
+currDir=${PWD}
+
+# Build the movingAverage library
+# ===============================
+if [[ -e "movingAverage/.git" ]]; then
+    __banner "building moving average library"
+    cd movingAverage
+    ./Allwmake -j > log.compile_movingAverage
+    __banner "Done building moving average library"
+else
+    __warningBanner "Moving Average Git Submodule"
+    >&2 echo "Git submodule of the moving average library is not available! Use:"
+    >&2 echo "    git submodule update --init"
+    >&2 echo "Skipping build of movingAverage library..."
+    >&2 echo "Uses dummy library..."
+    cd movingAverageDummy
+    wmake
+fi
+
+cd ${currDir}
+
+
+# build libraries and applications
+wmake
+rm $FOAM_USER_LIBBIN/libDummy.so
+cd NewtonLinODE
+make
+cd ..
+cd GENPOL
+make
+cd ..
+
+# Build syntheticTurbulenceInletUMeanControl
+cd syntheticTurbulenceInletUMeanControl
+wmake 
+cd ..
+
+# ----------------------------------------------------------------- end-of-file

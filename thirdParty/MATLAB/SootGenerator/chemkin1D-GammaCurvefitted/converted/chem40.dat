@@ -1,0 +1,475 @@
+ELEMENTS
+O H C N AR
+END
+
+SPECIES
+N2  AR  O    O2     H    H2     OH   HO2    H2O  H2O2   CO   CO2     CH     CH2  CH2s    CH3     
+CH4    CH2OH     CH3OH   HCO     C2H     C2H2    C2H3   C2H4 
+C2H5    C2H6    HCCO    HCCOH    CH2CO    CH3HCO    C3H2    H2CCCH    C3H4    C3H4P    
+CH2CHCH2    H2CCCCH    CH2CHCCH    CH2CHCHCH    CH2CHCCH2    CH2CHCHCH2    CH3CCCH2    CH2O    
+C5H5    C5H6    A1-    A1    C6H5CH2    C6H5CH3    C6H5O    C6H5OH    C6H5C3H2    P2-    P2    
+A1C2H    A1C2HP2    A2-1    A2    A2C2HA    A2C2HP2    A2R5    A2R5-    IND    A3-4    A3    
+A3C2H    A4-    A4   BINi-01   BINi-02   BINi-03   BINi-04   BINi-05   BINi-06    
+BINi-07   BINi-08   BINi-09   BINi-10   BINi-11   BINi-12   BINi-13   BINi-14    
+BINi-15   BINi-16   BINi-17   BINi-18   BINi-19   BINi-20       
+BINi-21   BINi-22   BINi-23     BINi-24     BINi-25     BINi-26     BINi-27     BINi-28
+BINi-29     BINi-30     BINi-31     BINi-32     BINi-33     BINi-34     BINi-35
+BINi-36     BINi-37     BINi-38     BINi-39     BINi-40
+BINj-01   BINj-02   BINj-03   BINj-04   BINj-05   BINj-06   BINj-07   BINj-08    
+BINj-09   BINj-10   BINj-11   BINj-12   BINj-13   BINj-14   BINj-15   BINj-16    
+BINj-17   BINj-18   BINj-19   BINj-20    
+BINj-21   BINj-22   BINj-23     BINj-24     BINj-25
+BINj-26   BINj-27   BINj-28   BINj-29   BINj-30   BINj-31   BINj-32   BINj-33    
+BINj-34   BINj-35   BINj-36   BINj-37   BINj-38   BINj-39  BINj-40
+END
+
+REACTIONS
+
+! Submeccanismo H2/O2 usato da Frenklach
+                                         
+
+ H+O2 = O+OH                              8.300E+13    0.0    14413.0       !   1
+ O+H2 = H+OH                              5.000E+04    2.67    6290.0       !   2
+ OH+H2 = H+H2O                            2.160E+08    1.51    3430.0       !   3
+ OH+OH = O+H2O                            3.570E+04    2.4    -2110.0       !   4
+ H+H+M = H2+M                             1.000E+18   -1.0        0.0       !   5
+   H2/0.0/ H2O/0.0/ CH4/2.0/ CO2/0.0/ C2H6/3.00/ AR/0.63/
+ H+H+H2 = H2+H2                           9.000E+16   -0.60       0.0       !   6
+ H+H+H2O = H2+H2O                         6.000E+19   -1.25       0.0       !   7
+ H+H+CO2 = H2+CO2                         5.500E+20   -2.0        0.0       !   8
+ H+OH+M = H2O+M                           2.200E+22   -2.0        0.0       !   9
+   H2/0.73/ H2O/3.65/ CH4/2.0/ C2H6/3.0/ AR/0.38/
+ O+H+M = OH+M                             5.000E+17   -1.0        0.0       !  10
+   H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/ AR/0.7/   
+ O+O+M = O2+M                             1.200E+17   -1.0        0.0       !  11
+   H2/ 2.4/ H2O/15.4/ CH4/ 2.0/ CO/ 1.75/ CO2/ 3.6/ C2H6/ 3.0/ AR/ 0.83/
+ H+O2+M = HO2+M                           2.800E+18   -0.86       0.0       !  12
+   O2/0.0/ H2O/0.0/ CO/0.75/ CO2/1.5/ C2H6/1.5/ N2/0.0/ AR/0.0/
+ H+O2+O2 = HO2+O2                         3.000E+20   -1.72       0.0       !  13
+ H+O2+H2O = HO2+H2O                       9.380E+18   -0.76       0.0       !  14
+ H+O2+N2 = HO2+N2                         3.750E+20   -1.72       0.0       !  15
+ H+O2+AR = HO2+AR                         7.000E+17   -0.80       0.0       !  16
+ OH+OH(+M) = H2O2(+M)                     7.400E+13   -0.37       0.0       !  17
+      LOW  /  2.300E+18   -0.900  -1700.00/ 
+      TROE/  0.7346   94.00  1756.00  5182.00 /
+   H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/ AR/0.7/
+
+! Reazioni del radicale idroperossi (HO2)
+
+ HO2+H = O+H2O                            3.970E+12    0.0      671.0       !  18
+ HO2+H = O2+H2                            2.800E+13    0.0     1068.0       !  19
+ HO2+H = OH+OH                            1.340E+14    0.0      635.0       !  20
+ HO2+O = OH+O2                            2.000E+13    0.0        0.0       !  21
+ HO2+OH = O2+H2O                          2.900E+13    0.0     -500.0       !  22
+ HO2+HO2 = O2+H2O2                        1.300E+11    0.0    -1630.0       !  23
+  DUPLICATE 
+ HO2+HO2 = O2+H2O2                        4.200E+14    0.0    12000.0       !  24
+  DUPLICATE
+
+! Reazioni dell'H2O2
+
+ H2O2+H = HO2+H2                          1.210E+07    2.0     5200.0       !  25
+ H2O2+H = OH+H2O                          1.000E+13    0.0     3600.0       !  26
+ H2O2+O = OH+HO2                          9.630E+06    2.0     4000.0       !  27
+ H2O2+OH = HO2+H2O                        1.750E+12    0.0      320.0       !  28
+  DUPLICATE
+ H2O2+OH = HO2+H2O                        5.800E+14    0.0     9560.0       !  29
+  DUPLICATE
+
+
+! Ossidazione CO->CO2 (reazioni 30 e 31) Vandooren
+
+
+
+CO+OH=CO2+H                               5.06E6       1.5     -497.0       !  30
+CO+HO2=CO2+OH                             1.5E14       0.0    23650.0       !  31    
+
+
+
+! Ossidazione Metilidino (CH) (reazioni 32 e 33)
+
+
+
+CH+O=CO+H                                3.97E13       0.0       0.0        !  32
+CH+O2=CO+OH                              3.31E13       0.0       0.0        !  33 Baulch 1992
+
+
+
+! Reazioni Metilene-tripletto (CH2) (reazioni da 34 a 38)
+
+
+
+CH2+H=CH+H2                             6.02E12        0.0   -1789.2        !  34
+CH2+O=CO+H+H                            1.20E14        0.0       0.0        !  35
+CH2+O2=CO2+H+H                          2.47E13        0.0    1491.0        !  36
+CH2+CH2=C2H2+H2                         1.20E14        0.0     795.2        !  37
+CH2+CH3=C2H4+H                          4.22E13        0.0       0.0        !  38 Miller 1992
+
+
+
+! Reazioni Metilene-singoletto [CH2s] (reazioni da 39 a 50) 
+
+
+
+CH2s+M=CH2+M                          1.00E13        0.0       0.0        !  39 Miller 1992
+   H/12.0/ H2O/3.0/ C2H2/4.0/
+CH2s+CH4=CH3+CH3                         4.00E13        0.0       0.0        !  40 Miller 1992
+CH2s+C2H6=CH3+C2H5                    1.20E14        0.0       0.0        !  41 Miller 1992
+CH2s+O2=CO+OH+H                       7.00E13        0.0       0.0        !  42 Miller 1992
+CH2s+H2=CH3+H                         7.00E13        0.0       0.0        !  43 Miller 1992
+CH2s+H2O=CH3+OH                       1.00E14        0.0       0.0        !  44
+CH2s+O=CO+H+H                          3.00E13        0.0       0.0        !  45 Miller 1992
+CH2s+OH=CH2O+H                        3.00E13        0.0       0.0        !  46 Miller 1992
+CH2s+H=CH+H2                          3.00E13        0.0       0.0        !  47 Miller 1992
+CH2s+CO2=CH2O+CO                      3.00E12        0.0       0.0        !  48 Miller 1992
+CH2s+CH3=C2H4+H                       2.00E13        0.0       0.0        !  49 Miller 1992
+CH2s+CH2CO=C2H4+CO                    1.60E14        0.0       0.0        !  50 Miller 1992
+  
+
+
+! Reazioni Metile (CH3) (reazioni da 51 a 62) Vandooren-Van Tiggelen
+
+
+
+CH3+H=CH2+H2                           6.02E13         0.0   15108.8        !  51 Vandooren  
+CH3+O=CH2O+H                           8.43E13         0.0       0.0        !  52 Vandooren  
+CH3+O2=CH2O+H+O                        3.00E13         0.0   28711.48       !  53 Vandooren
+CH3+O2=CH2O+OH                         3.31E11         0.0    8946.0        !  54 Vandooren  
+CH3+OH=CH2O+H2                         8.00E12         0.0       0.0        !  55 Vandooren  
+CH3+OH=CH2O+H+H                        4.56E14         0.0   15493.87       !  56 Vandooren  
+CH3+OH=CH2+H2O                         3.61E13         0.0       0.0        !  57 Vandooren  
+CH3+CH2O=HCO+CH4                       4.09E12         0.0    8846.6        !  58 Vandooren  
+CH3+CH3=C2H5+H                         3.01E13         0.0   13518.4        !  59 Vandooren  
+CH3+CH3=C2H4+H2                        1.00E16         0.0   32013.5        !  60 Vandooren  
+
+2CH3(+M)<=>C2H6(+M)                      6.770E+16   -1.180     654.00
+     LOW  /  3.400E+41   -7.030   2762.00/
+     TROE/   .6190  73.20  1180.00  9999.00 /
+H2/2.00/ H2O/6.00/ CH4/2.00/ CO/1.50/ CO2/2.00/ C2H6/3.00/ AR/ .70/ 
+! 10
+
+CH3+H(+M)=CH4(+M)                      6.0E16         -1.0       0.0        !  62 Miller   
+  LOW/8.0E26  -3.0  0.0/                   
+  H2/2.0/ CO/2.0/ CO2/3.0/ H2O/5.0/           
+
+
+
+! Reazioni Metano (CH4) (reazioni da 63 a 65)
+
+
+
+CH4+H=H2+CH3                           2.2E4           3.0    8041.46      !  63 Peters   
+CH4+O=OH+CH3                           9.03E8          1.56   8488.76      !  64 Vandooren   
+CH4+OH=H2O+CH3                         1.56E7          1.83   2783.2       !  65 Vandooren   
+
+
+
+! (28/9/98) Aggiunte reazioni per il Metanolo (CH3OH) dallo schema di Vandooren
+! e Van Tiggelen (reazioni da 66 a 74)
+
+
+
+CH3OH+H=CH2OH+H2                       3.4E+13         0.0    2600.0       !  66 Vandooren 
+CH3OH+OH=CH2OH+H2O                     4.8E+13         0.0    4500.0       !  67 Vandooren
+CH3OH+H=CH3+H2O                        1.3E+13         0.0    5300.0       !  68 Vandooren
+CH3OH+O=CH2OH+OH                       1.7E+12         0.0    2250.0       !  69 Vandooren
+CH2OH+M=CH2O+H+M                       5.0E+13         0.0   21000.0       !  70 Vandooren
+CH2OH+O2=CH2O+HO2                      1.0E+14         0.0    5000.0       !  71 Vandooren
+CH2OH+H=CH2O+H2                        2.0E+13         0.0       0.0       !  72 Vandooren
+CH2OH+O=CH2O+OH                        1.0E+13         0.0       0.0       !  73 Vandooren
+CH2OH+OH=CH2O+H2O                      1.0E+13         0.0       0.0       !  74 Vandooren
+
+
+
+! Reazioni Formaldeide (CH2O) e Formile (HCO) (reazioni da 75 a 83)
+
+
+
+CH2O+H=HCO+H2                          2.29E10         1.05   3280.2       !  75 Vandooren
+CH2O+O=HCO+OH                          4.16E11         0.57   2763.32      !  76 Vandooren  
+CH2O+OH=HCO+H2O                        3.43E9          1.18   -447.3       !  77 Vandooren   
+HCO+H=CO+H2                            9.03E13         0.0       0.0       !  78 Vandooren   
+HCO+O=CO2+H                            3.01E13         0.0       0.0       !  79 Vandooren   
+HCO+O=CO+OH                            3.01E13         0.0       0.0       !  80 Vandooren   
+HCO+OH=CO+H2O                          1.02E14         0.0       0.0       !  81 Vandooren   
+HCO+O2=CO+HO2                          3.01E12         0.0       0.0       !  82 Vandooren   
+HCO+M=CO+H+M                           7.0E14         -1.0   16990.66      !  83 Peters   
+
+
+
+! Ossidazione/Pirolisi Acetilene (C2H2) (reazioni da 84 a 99)        
+
+
+
+CH+CH2=C2H2+H                          4.00E13         0.0       0.0       !  84 Miller 1992
+C2H+O=CO+CH                            1.02E13         0.0       0.0       !  85
+C2H+O2=CO+CO+H                         1.81E13         0.0       0.0       !  86
+C2H2+O=C2H+OH                          3.16E15        -0.6   15000.0       !  87 Miller 1992
+C2H2+OH=HCCOH+H                        5.04E5          2.3   13500.0       !  88 Miller 1992
+C2H2+OH=CH3+CO                         4.83E-4         4.0   -2000.0       !  89 Miller 1992
+C2H2+O2=HCCO+OH                        2.00E8          1.5   30100.0       !  90 Miller 1992
+C2H2+H(+M)=C2H3(+M)                    5.54E12         0.0    2410.0       !  91 Miller      
+   LOW/2.67E27  -3.5  2410.0/         
+   H2/2.0/ CO/2.0/ CO2/3.0/ H2O/5.0/         
+C2H2+H=H2+C2H                         6.02E13         0.0   27832.0     !  92  
+C2H2+O=CH2+CO                          1.4E6           2.1    1562.0     !  93 McKinnon 
+C2H2+O=HCCO+H                          1.43E7          2.0    1900.0     !  94 MARinov  
+C2H2+OH=CH2CO+H                        2.18E-4         4.5   -1000.0     !  95 Miller 1992    
+C2H2+OH=H2O+C2H                       3.37E7          2.0   14000.0     !  96 Miller 1992  
+
+!C2H+C2H2=C4H2+H                        6.00E12         0.0       0.0       !  97 modificata /100
+
+!C2H+C2H2=C4H2+H                        6.00E14         0.0       0.0       !  97
+
+
+
+C2H2+CH=C3H2+H                         1.00E14         0.0       0.0       !  98 Miller 1992
+C2H2+M=C2H+H+M                         4.20E16         0.0  107000.0       !  99 Miller 1992
+
+
+
+! Ossidazione/Pirolisi Etilene (C2H4) (reazioni da 100 a 110)
+
+
+
+C2H4+O=HCO+CH3                         3.46E6          2.08      0.0       ! 100
+C2H4+OH=C2H3+H2O                       2.05E13         0.0    5944.12      ! 101 Miller 1992
+C2H4+H=H2+C2H3                         8.15E14         0.0   14910.0       ! 102
+C2H3+O2=C2H2+HO2                       1.00E12         0.0       0.0       ! 103    /5
+C2H3+O=CH2CO+H                         3.00E13         0.0       0.0     ! 104    
+C2H3+O2=>CH2O+HCO                      5.42E12         0.0       0.0       ! 105
+C2H4+M=C2H2+H2+M                       1.50E15         0.0   55800.0       ! 106
+C2H4+M=C2H3+H+M                        1.4E16          0.0   82360.0       ! 107  
+C2H3+CH2=C2H2+CH3                      3.00E13         0.0       0.0       ! 108  
+C2H3+C2H=C2H2+C2H2                     3.00E13         0.0       0.0       ! 109 Miller 1992
+C2H3+CH=CH2+C2H2                       5.00E13         0.0       0.0       ! 110 Miller 1992
+
+
+OH+C2H3 = H2O+C2H2                           1.000E+12     .000        .00 ! 
+H+C2H3 = H2+C2H2                             3.000E+13     .000        .00 ! 
+
+! Ossidazione/Pirolisi Etano (C2H6) (reazioni da 111 a 116)
+
+
+
+C2H6+H=H2+C2H5                         1.45E9          1.5    7415.24      ! 111
+C2H6+O=OH+C2H5                         1.00E9          1.5    5804.96      ! 112
+C2H6+OH=H2O+C2H5                       7.23E6          2.0     864.78      ! 113 Baulch 1992
+C2H5+O=CH3HCO+H                        6.62E13         0.0       0.0       ! 114
+C2H5+O2=HO2+C2H4                       1.02E10         0.0   -2186.8       ! 115
+C2H5=C2H4+H                            3.00E42        -9.5   49561.26      ! 116
+
+
+
+! Ossidazione/Pirolisi Ketile (HCCO) (reazioni da 117 e 123)       
+
+
+
+HCCO+H=CH2s+CO                       1.00E14         0.0      0.0        ! 117 Miller 1992
+HCCO+O=CO+CO+H                         8.00E13         0.0      0.0        ! 118 Peters 1995
+HCCO+OH=>HCO+CO+H                      1.00E14         0.0      0.0        ! 119   
+HCCO+O2=>CO+CO+OH                      1.63E12         0.0    854.84       ! 120
+HCCO+C2H2=H2CCCH+CO                    1.00E11         0.0   3000.0        ! 121 Miller 1992
+HCCO+HCCO=C2H2+CO+CO                   1.00E13         0.0      0.0        ! 122 Miller 1992
+HCCO+CH=C2H2+CO                        5.00E13         0.0      0.0        ! 123 Miller 1992
+
+
+
+! Ossidazione Ketene (CH2CO) e Acetaldeide (CH3HCO) (reazioni da 124 a 129)
+
+
+
+CH3HCO+H=CH3+CO+H2                     4.00E13         0.0   4201.04       ! 124
+CH3HCO+OH=CH3+CO+H2O                   1.00E13         0.0      0.0        ! 125
+CH2CO+H=CH3+CO                         1.81E13         0.0   3379.6        ! 126
+CH2CO+O=HCO+HCO                        2.29E12         0.0   1351.84       ! 127
+CH2CO+OH=CH2O+HCO                      1.02E13         0.0      0.0        ! 128
+CH2CO+M=CH2+CO+M                       1.00E16         0.0  59323.83       ! 129
+  
+
+
+
+! Formazione/Ossidazione C3 (reazioni da 130 a 151)
+
+
+
+C3H2+O2=>HCCO+CO+H                      5.00E13         0.0      0.0        ! 130 Miller 1992
+C3H2+OH=C2H2+HCO                       5.00E13         0.0      0.0        ! 131 Miller 1992
+CH2+C2H2=H2CCCH+H                      1.20E13         0.0   6600.0        ! 132 Miller 1992
+CH2s+C2H2=H2CCCH+H                   1.80E14         0.0      0.0        ! 133  
+H2CCCH+O2=CH2CO+HCO                    3.00E10         0.0   2868.0        ! 134 Miller 1992
+H2CCCH+O=CH2O+C2H                      2.00E13         0.0      0.0        ! 135 Miller 1992
+H2CCCH+OH=C3H2+H2O                     2.00E13         0.0      0.0        ! 136 Miller 1992
+C2H3+CH2=C3H4+H                        3.00E13         0.0      0.0        ! 137  
+C2H2+CH3=CH2CHCH2                      1.61E40        -8.58 20331.0        ! 138
+CH2CHCH2+H=C3H4+H2                     1.81E13         0.0      0.0        ! 139
+CH2CHCH2+CH3=C3H4+CH4                  1.00E11         0.0      0.0        ! 140
+CH2CHCH2+C2H3=C3H4+C2H4                1.00E12         0.0      0.0        ! 141
+C3H4+M=H2CCCH+H+M                      2.00E18         0.0  80000.0        ! 142
+C3H4+O2=H2CCCH+HO2                     4.00E13         0.0  61500.0        ! 143
+C3H4+OH=H2CCCH+H2O                     2.00E7          2.0   1000.0        ! 144 Miller 1992
+C3H4+H=CH2CHCH2                        4.00E12         0.0   2700.0        ! 145
+C3H4+H=H2CCCH+H2                       1.00E12         0.0   1500.0        ! 146
+C3H4+CH3=H2CCCH+CH4                    5.00E7          2.0   5000.0        ! 147
+H2CCCH+H=C3H2+H2                       5.00E13         0.0   3000.0        ! 148 Miller 1992
+C3H4P+H=H2CCCH+H2                      1.0E7           2.0   5000.0        ! 149 Miller 1992
+C3H4P+H=CH3+C2H2                       1.0E14          0.0   4000.0        ! 150 Miller 1992
+C3H4P+OH=H2CCCH+H2O                    8.00E6          2.0   1000.0        ! 151 Miller 1992
+
+
+
+
+H2CCCH+H2CCCH=A1-+H                    3.0E12          0.0      0.0        ! 191 MARinov 1996
+H2CCCH+C3H2=A1-                        3.0E12          0.0      0.0        ! 192
+C3H4+C3H2=A1                           7.4E13         -0.7    920.0        ! 193
+C3H4P+C3H2=A1                          1.4E14         -0.8   1030.0        ! 194
+C3H4+H2CCCH=A1+H                       2.2E11          0.0   2000.0        ! 195
+
+
+
+A1-+O2=C6H5O+O                         2.6E13    0.0   6120.0  ! 221  Frank 1994 
+!A1-+O2=C6H4O2+H                        3.0E13    0.0   8981.0  ! 222  Frank 1994 tolta in FRA 5
+A1-+O=>C5H5+CO                         1.0E14    0.0      0.0  ! 223  Frank 1994
+ 
+C6H5O=>C5H5+CO                         1.48E12   0.0  43850.0  ! 225  Frank 1994 aggiunta in FRA 5
+
+A1+OH=C6H5OH+H                         1.32E13   0.0  10994.0  ! 232
+
+C6H5OH+H=C6H5O+H2                      2.28E14   0.0  12404.0  ! 236 aggiunta in FRA 5
+C6H5OH+O=C6H5O+OH                      1.28E13   0.0   2891.0  ! 237 aggiunta in FRA 5
+C6H5OH+OH=C6H5O+H2O                    1.0E13    0.0      0.0  ! 238 aggiunta in FRA 5
+C6H5O+H=C6H5OH                         2.53E14   0.0      0.0  ! 229
+C6H5O+H +M =C6H5OH +M               2.5E+14    0.0        0.0  ! 399
+A1-+OH=C6H5O+H                         5.0E13          0.0      0.0        ! 211 Miller 1992
+
+A1+O=C6H5OH                            2.23E13   0.0   4530.0  ! 235
+
+
+A1-+H=A1                               1.0E14    0.0      0.0  ! 230
+A1+H=A1-+H2                            2.83E13   0.0  15999.0  ! 231
+
+A1+OH=A1-+H2O                          1.45E13   0.0   4491.0  ! 233
+A1+O=A1-+OH                            1.0E1     3.8   1790.0  ! 234
+
+C6H5CH2+OH=C6H5O+CH3           2.3E49      -10.9     14130.0   ! 243  McKinnon
+A1-+H2CCCH=C6H5C3H2+H          3.0E12        0.0         0.0   ! 244
+C6H5C3H2+H2CCCH=P2-+H          3.0E12        0.0         0.0   ! 245
+P2-+C2H2=A3+H                  6.64E33      -5.92    22608.0   ! 246  Frank
+
+
+A2-1+O=>IND+CO                9.0E13        0.0         0.0   ! 248  inv.Simile C6H6
+C5H5+IND=>A3+H2               2.0E13        0.0     14000.0   ! 250  MARr
+
+C2H3+C2H4=CH2CHCHCH2+H                 3.0E12          0.0   1000.0        ! 176  
+CH2CHCHCH2+H=CH2CHCCH2+H2              3.0E7           2.0   6000.0        ! 178 Miller 1992
+CH2CHCHCH2+OH=CH2CHCHCH+H2O            2.0E7           2.0   5000.0        ! 179 Miller 1992
+
+CH2CHCCH2+H=CH3+H2CCCH                 1.0E14          0.0      0.0        ! 200 MARinov 1996
+CH3CCCH2+H=CH3+H2CCCH                  1.0E14          0.0      0.0        ! 202 MARinov 1996
+CH3CCCH2+H2CCCH=>C6H5CH2+H              10.0E12          0.0      0.0        ! 203 MARinov K329
+
+C6H5CH2+H=C6H5CH3                      1.8E14          0.0      0.0        ! 205 Emdee 1992
+C6H5CH3+H=A1+CH3                       1.2E13          0.0   5148.0        ! 206 Emdee 1992
+
+C6H5CH2+H2CCCH=A2+H+H          1.0E12        0.0         0.0   ! 242 come C3+C3 da 3E12
+C5H5+C5H5=A2+H+H               3.3E12        0.5     24000.0   ! 247 da 1.3E13 
+
+!A1+C2H=A1C2H+H                 5.00E+13      0.0         0.0   ! 282 Guess FRA 1
+A1+C2H=A1C2H+H                 1.00E+14      0.0         0.0   ! 282 Guess FRA 2 (*2)
+A1-+C2H2=A1C2H+H               3.3E+33      -5.70    25500.0   ! 284 760 t
+
+
+P2+H=P2-+H2                         2.50E+14   0.0    16000.   ! 389 Kiefea
+
+
+A1+A1-=P2+H                         1.1E+23   -2.92   15890.0  ! 383 760 t
+
+
+A1C2HP2+H=A2-1                      1.4E+64   -14.57  29900.   ! 317 760 t
+A1C2H+C2H=A1C2HP2+H                 5.00E+13    0.0       0.   ! 320 Estimated
+
+
+A2+H=A2-1+H2                        2.50E+14    0.0   16000.   ! 323 Kiefea
+
+A2+OH=A2-1+H2O                      1.60E+08    1.42   1450.0  ! 325 CEC
+
+A2+C2H=A2C2HA+H                     5.00E+13    0.0       0.   ! 330 Estimated
+
+A2-1+C2H2=A2R5+H                    9.7E+30   -5.26  21600.0   ! 368 H.Wang M.Frenklach JPC.98.44.1994
+A2C2HA+H=A2R5+H                     4.6E+37   -7.03  23100.    ! 369 760
+
+
+A2C2HA+C2H=A2C2HP2+H                5.00E+13   0.0       0.    ! 352 Estimated
+!A2C2HA+C2H=A3-4               5.00E+13   0.0       0.    ! 352 Estimated FRA 8
+ 
+
+A2R5+H=A2R5-+H2                     2.50E+14   0.0   16000.    ! 365 A1 + H
+
+!A3+C2H=A3C2H+H                      5.00E+13    0.00      0.   ! 373 Estimated ori
+A3+C2H=A3C2H+H                      1.00E+14    0.00      0.   ! 373 Estimated FRA 7
+
+!A3-4+C2H2=A3C2H+H                   1.2E+26    -3.44  30200.   ! 375 760 t
+!A3-4+C2H2=A4+H                      6.6E+24    -3.36  17800.   ! 376 760 t
+A3-4+C2H2=A3C2H+H                   1.2E+27    -3.44  30200.   ! 375 760 t *10 FRA 9
+A3-4+C2H2=A4+H                      6.6E+25    -3.36  17800.   ! 376 760 t *10 FRA 9
+A3+H=A3-4+H2                        2.50E+14   0.0   16000.    ! 355 Kiefer FRA 10 
+A3+OH=A3-4+H2O                      1.60E+08   1.42   1450.0   ! 357 CEC FRA 10
+
+
+A2C2HP2+H=A3-4                      6.9E+63  -14.57  29900.    ! 351 760 t
+
+A4-+O2=>A3-4+CO+CO                  2.10E+12   0.0     7470.0  ! 472 = A1- + O2 aggiunta in FRA 6
+A2-1+O2=>A1C2H+HCO+CO               2.10E+12   0.0     7470.0  ! 466 = A1- + O2 aggiunta in FRA 6
+A3-4+O2=>A2C2HA+HCO+CO              2.10E+12   0.0     7470.0  ! 470 = A1- + O2 aggiunta in FRA 6
+
+
+A3C2H+H=A4+H                        9.0E+38    -7.39  20700.   ! 378 760 t
+
+A4+H=A4-+H2                         2.50E+14    0.0   16000.   ! 380 Kiefer
+A4+OH=A4-+H2O                       1.60E+08    1.42   1450.0  ! 381 CEC
+
+
+!FRA 3
+H2CCCCH+C2H2=A1-                       3.0E11          0.0  14900.0        ! 199 MARinov (Tsang RRKM)
+
+H2CCCCH+O2=CH2CO+HCCO                  1.00E12         0.0      0.0        ! 159 Miller 1992
+
+CH2CHCHCH2+H=CH2CHCHCH+H2              3.0E7           2.0  13000.0        ! 177 Miller 1992
+C2H2+CH2CHCHCH=A1+H                    1.60E16        -1.33  5400.0        ! 196 Wang 1994
+CH2CHCCH+OH=H2CCCCH+H2O                1.0E7           2.0   2000.0        ! 168 Miller 1992
+CH2CHCCH+H=H2CCCCH+H2                  3.0E7           2.0   5000.0        ! 173 Miller 1992
+
+C2H3+C2H2=CH2CHCCH+H                   2.00E12         0.0   5000.0        ! 156 Miller 1992
+CH2CHCHCH +M =CH2CHCCH+H +M            1.0E14          0.0  37000.0        ! 183 Miller 1992
+CH2CHCCH2 +M =CH2CHCCH+H +M            1.0E14          0.0  50000.0        ! 182 Miller 1992
+C5H6+H=>CH2CHCH2+C2H2                  1.00E+13        0.0  12000.0        ! 187     
+C5H5+O=>CH2CHCHCH+CO                   1.0E+14         0.0      0.0        ! 188
+C5H5+H=C5H6                            2.0E14    0.0      0.0  ! 214  Estimate
+!C5H4O+H=C5H4OH                        5.36E31  -5.4  12420.0  ! 215  
+C5H6+H=C5H5+H2                         2.19E8    1.77  3000.0  ! 216  Emdee 1992
+C5H6+O=C5H5+OH                         1.81E13   0.0   3080.0  ! 217  Emdee 1992
+C5H6+OH=C5H5+H2O                       3.43E9    1.18  -447.0  ! 218  Emdee 1992
+C5H6+O2=C5H5+HO2                       2.0E13    0.0  25000.0  ! 219  
+C6H5O+H=>C5H6+CO                       3.0E13    0.0      0.0  ! 227  
+C5H5+H(+M)=C5H6(+M)                 1.0E+14    0.0        0.0  ! 404
+    LOW  / 4.4E+80 -18.28 12994.0 /       ! E in cal/mol
+    TROE / 0.068   400.7  4135.8  5501.9 /
+  H2/2.0/ H2O/6.0/ CH4/2.0/ CO/1.5/ CO2/2.0/ C2H6/3.0/
+C5H5+HO2=CH2CHCHCH+CO+OH                   3.00E+13   0.0        0.0  ! 407 MIAA
+
+A4+OH=>A3-4+CH2CO                   1.30E+13   0.0    10600.0  ! 434 CEC
+A4+O=>A3-4+HCCO                     2.20E+13   0.0     4530.0  ! 450 =A1 + O
+A3C2H+OH=>A2C2HA+C2H2+HCCO           6.50E+12   0.0    10600.0  ! 432 CEC
+A3C2H+OH=>A3-4+CH2CO                2.18E-04   4.5    -1000.0  ! 423 =C2H2+OH
+A3C2H+O=>A2C2HA+C2H+HCCO               1.10E+13   0.0     4530.0  ! 448 =A1 + O / 2
+A3+OH=>A2C2HA+CH2CO+H               6.50E+12   0.0    10600.0  ! 431 CEC
+A3+O=>A2C2HA+CH2CO                  1.10E+13   0.0     4530.0  ! 446 =A1 + O / 2
+A2+OH=>A1C2H+CH2CO+H                1.30E+13   0.0    10600.0  ! 427 CEC
+A2+O=>CH2CO+A1C2H                   2.20E+13   0.0     4530.0  ! 443 =A1 + O
+A1C2H+OH=>C6H5O+C2H2                1.30E+13   0.0    10600.0  ! 424 CEC
+A1C2H+O=>HCCO+A1-                   2.04E+07   2.0     1900.0  ! 435 =C2H2+O
+
+
+
+
+END

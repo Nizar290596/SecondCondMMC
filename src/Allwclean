@@ -1,0 +1,12 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # run from this directory
+makeType=${1:-libso}
+
+set -x
+
+wclean $makeType mmcSupport
+wclean $makeType mmcChemistryModel
+wclean $makeType lagrangian/mmc
+wclean $makeType lagrangian/spray
+
+# ----------------------------------------------------------------- end-of-file

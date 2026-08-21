@@ -1,0 +1,101 @@
+#!/bin/bash
+#*---------------------------------------------------------------------------*\
+#                                       8888888888                              
+#                                       888                                     
+#                                       888                                     
+#  88888b.d88b.  88888b.d88b.   .d8888b 8888888  .d88b.   8888b.  88888b.d88b.  
+#  888 "888 "88b 888 "888 "88b d88P"    888     d88""88b     "88b 888 "888 "88b 
+#  888  888  888 888  888  888 888      888     888  888 .d888888 888  888  888 
+#  888  888  888 888  888  888 Y88b.    888     Y88..88P 888  888 888  888  888 
+#  888  888  888 888  888  888  "Y8888P 888      "Y88P"  "Y888888 888  888  888 
+#------------------------------------------------------------------------------- 
+#
+#License
+#    This file is part of mmcFoam.
+#
+#    mmcFoam is free software: you can redistribute it and/or modify it
+#    under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    mmcFoam is distributed in the hope that it will be useful, but 
+#    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+#    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#    for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with  mmcFoam.  If not, see <http://www.gnu.org/licenses/>.
+#
+#Description
+#    Executes all test cases
+#
+#Author
+#    Jan Wilhelm Gärtner <jan.gaertner@outlook.de> Copyright (C) 2022
+#
+#*---------------------------------------------------------------------------*/
+
+source ../etc/supportFunctions.sh
+
+
+# Set script to abort on any command that results an error status
+trap '__abort' 0
+set -e
+
+
+baseDir=$(pwd)
+
+EXE="${baseDir}/src/unitTest-mmcFoam.exe"
+
+tags=("mmcSupport" "mmcChemistryModel" "popeParticles" "mmcClouds" \
+      "mixing" "reactive" "sprayClouds" "sprayParcels" "filterFields"\
+      "particleNumberControl")
+
+# =============================================================================
+# First check all single core tests
+# =============================================================================
+for tag in ${tags[@]}; do
+    __banner Execute test case: ${tag}
+
+    # First execute all tests in single core
+    cd ${baseDir}/Cases/Case-${tag}
+    [[ -e "testFileBinary.dat" ]] && rm testFileBinary.dat
+    # Check if blockMesh has to be created
+    if [[ -e system/blockMeshDict ]]; then
+        blockMesh > log.mesh 2>&1
+    fi
+    if [[ -e system/super/blockMeshDict ]]; then
+        blockMesh -region super > log.mesh 2>&1
+    fi
+    if [[ -e system/filterMesh/blockMeshDict ]]; then
+        blockMesh -region filterMesh > log.mesh 2>&1
+    fi
+    ${EXE} [${tag}]
+done
+
+# =============================================================================
+# Check all parallel cases
+# =============================================================================
+
+tags=("mmcSupport" "popeParticles" "mixing" "sprayParcels" "filterFields")
+
+for tag in ${tags[@]}; do
+    __banner "Execute test case: ${tag} -- parallel"
+
+    cd ${baseDir}/Cases/Case-${tag}
+
+    # Execute tests in parallel if exists
+    if [[ $(__checkCPU "8") == "0" ]]; then
+        __warningBanner "There are not enough slots available in the system to satisfy the 8\nslots that were requested by the application:"
+    else
+        [[ -e "testFileBinary.dat" ]] && rm testFileBinary.dat
+        [[ -e "system/decomposeParDict" ]] && decomposePar -force > log.decompose 2>&1
+        [[ -e "system/filterMesh/decomposeParDict" ]] && decomposePar -region filterMesh -force > log.decompose 2>&1
+        [[ -e "system/blockMeshDict" ]] && blockMesh > log.mesh 2>&1 
+        [[ -e "system/filterMesh/blockMeshDict" ]] && blockMesh -region filterMesh > log.filterMesh 2>&1
+        mpirun -np 8 ${EXE} ["${tag}-parallel"] --parallel
+    fi
+done
+
+
+trap : 0
+

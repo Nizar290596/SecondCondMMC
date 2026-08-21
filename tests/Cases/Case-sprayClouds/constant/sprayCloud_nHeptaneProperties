@@ -1,0 +1,105 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      binary;
+    arch        "LSB;label=32;scalar=64";
+    class       dictionary;
+    location    "constant";
+    object      sprayCloud_nHeptaneProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solution
+{
+    active          true;
+    coupled         yes;
+    cellValueSourceCorrection no;
+    maxCo           0.3;
+    calcFrequency   1;
+    maxTrackTime    1;
+    sourceTerms
+    {
+        schemes
+        {
+            U               semiImplicit 1;
+        }
+        resetOnStartup  false;
+    }
+    interpolationSchemes
+    {
+        rho             cell;
+        U               cellPoint;
+        p               cell;
+        thermo:mu       cell;
+        T               cell;
+        Cp              cell;
+        kappa           cell;
+    }
+    integrationSchemes
+    {
+        U               Euler;
+        T               Euler;
+    }
+}
+
+subModels
+{
+    particleForces
+    {
+        sphereDrag      ;
+    }
+    dropletToMMCModel equal;
+    dispersionModel none;
+    patchInteractionModel standardWallInteraction;
+    stochasticCollisionModel none;
+    heatTransferModel none;
+    surfaceFilmModel none;
+    radiation       none;
+    additionalFluidProperties UDF;
+    standardWallInteractionCoeffs
+    {
+        type            rebound;
+    }
+    UDFCoeffs
+    {
+        saturationPressure
+        {
+            type            coded;
+            code            #{
+               std::vector<scalar> a {4.02832, 1268.636,   -56.199};  // NC7H16
+               return ( std::pow(10,a[0]-a[1]/(x+a[2]))*1E+5);
+           #};
+        }
+        binaryDiffusionCoefficient 3.42885e-06;
+        latentHeat
+        {
+            type            coded;
+            code            #{
+           scalar Tc = 540;
+           scalar Tr = x/Tc;
+           std::vector<scalar> a {5.3551E+5, 0.2831};  // NC7H16
+           return ( a[0]*std::exp(-a[1]*Tr)*std::pow(1-Tr,a[1]));
+           #};
+        }
+    }
+    equalCoeffs
+    {
+        useSPProps      false;
+        lambda_x        1;
+        lambda_f        0;
+        lambda_T        1;
+        ri              0.00025856;
+        fm              0.0072;
+        Tm              40;
+    }
+}
+
+
+// ************************************************************************* //

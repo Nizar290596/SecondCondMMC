@@ -1,0 +1,39 @@
+
+
+Folders:
+chemkin1D-GammaCurvefitted: generator for chemkin format
+Foam1D-GammaCurvefitted: generator for foam format
+
+
+Files:
+***-GammaCurvefitted/soot1D/solveCoeffs1D_CFit.m: read abstract sectional reactions and expand them to elemental reactions.
+
+***-GammaCurvefitted/soot1D/writeExpandReactions1D_CFit.m: write expanded reactions into foam/chemkin format.
+
+
+
+Note:
+lambda (porosity parameter) = Vfactor in ***-GammaCurvefitted/soot1D/CoagGamma_1D_CFit.m
+To generator kinetics using different lambda, change the Vfactor. 
+CoagGamma_1D.m is used to calculate GAMMA at fixed temperature and does not affect the generated soot kinetics.
+
+
+
+
+Other files:
+
+gasReader1D.m reads the gas phase chemkin formattedted reactions.
+
+FOAMwriter1D.m writes read data into foam format.
+
+thermoReader.m read chemkin formatted thermo data.
+
+thermoWriter.m write data into foam format in section
+lumped species thermo parameters linearly scale from A4 depending on weight ratio.
+
+thermoWriterNAPS.m write data into foam format in 1D section as imposed
+
+GetSectionalSpInfo.m read the section arrangements, i.e. nC nH nHj and save them as SectionInfo
+
+
+

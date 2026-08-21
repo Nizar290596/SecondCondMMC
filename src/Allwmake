@@ -1,0 +1,21 @@
+#!/bin/bash
+cd ${0%/*} || exit 1    # run from this directory
+makeType="libso"
+
+# Source the mmcFoam bashrc
+. ../etc/bashrc
+source ${MMC_PROJECT_USER_DIR}/etc/supportFunctions.sh
+
+# Set script to abort on any command that results an error status
+trap '__abort' 0
+set -e
+
+wmake ${@} $makeType mmcSupport
+wmakeLnInclude -pwd mmcSupport
+wmake ${@} $makeType mmcChemistryModel
+wmake ${@} $makeType lagrangian/mmc
+wmake ${@} $makeType lagrangian/spray
+
+trap : 0
+
+# ----------------------------------------------------------------- end-of-file

@@ -1,0 +1,7 @@
+itvInflow.C
+classes/intLength/intLength.C
+classes/variances/variances.C
+classes/statMesh/statMesh.C
+classes/inflowProperties/inflowProperties.C
+
+EXE = $(FOAM_USER_APPBIN)/itvInflow

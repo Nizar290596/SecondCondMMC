@@ -1,0 +1,9 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # run from this directory
+set -x
+
+thirdParty/Allwclean
+src/Allwclean
+applications/Allwclean
+
+# ----------------------------------------------------------------- end-of-file

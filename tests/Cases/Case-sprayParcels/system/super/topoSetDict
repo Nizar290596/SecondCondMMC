@@ -1,0 +1,207 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+
+  | ========= | |
+
+  | \\ / F ield | OpenFOAM: The Open Source CFD Toolbox |
+
+  | \\ / O peration | Version: 2.0.1 |
+
+  | \\ / A nd | Web: www.OpenFOAM.com |
+
+  | \\/ M anipulation | |
+
+  \*---------------------------------------------------------------------------*/
+
+FoamFile
+
+{
+
+	version 2.0;
+
+	format ascii;
+
+	class dictionary;
+
+	object topoSetDict;
+
+}
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+
+
+actions
+
+(
+ // inletFuel
+ {
+
+	 name cylinder0;
+
+	 type cellSet;
+
+	 action new;
+
+	 source cylinderToCell;
+
+	 sourceInfo
+
+		 {
+			 p1 (0 0 0);
+
+			 p2 (0 0 1e-3);
+
+			 radius 7.2e-3;
+
+		 }
+
+ }
+ // pilot
+ {
+	 name pilot0;
+	 type cellSet;
+	 action new;
+	 source cylinderAnnulusToCell;
+
+	 sourceInfo
+		 {
+			 p1 (0 0 0) ;
+			 p2 (0 0 1e-3) ;
+			 outerRadius 18.2e-3;
+			 innerRadius 7.2e-3;
+		 }
+ }
+
+ {
+
+	 name cylinder0Faces;
+
+	 type faceSet;
+
+	 action new;
+
+	 source cellToFace;
+
+	 sourceInfo
+
+		 {
+
+			 set cylinder0;  
+       
+			 option all;
+
+		 }
+
+ }
+ {
+
+	 name pilot0Faces;
+
+	 type faceSet;
+
+	 action new;
+
+	 source cellToFace;
+
+	 sourceInfo
+
+		 {
+
+			 set pilot0;  
+       
+			 option all;
+
+		 }
+
+ }
+ {
+
+	 name cylinder1;
+
+	 type cellSet;
+
+	 action new;
+
+	 source cylinderToCell;
+
+	 sourceInfo
+
+		 {
+			 p1 (0 0 0);
+
+			 p2 (0 0 1.5e-2);
+
+			 radius 20.0e-3;
+
+		 }
+
+ }
+
+
+
+ {
+
+	 name cylinder1Faces;
+
+	 type faceSet;
+
+	 action new;
+
+	 source cellToFace;
+
+	 sourceInfo
+
+		 {
+
+			 set cylinder1;
+       
+			 option both; 
+
+		 }
+
+ }
+
+ {
+
+	 name cylinder0Faces;
+
+	 type faceSet;
+
+	 action delete;
+
+	 source faceToFace;
+
+	 sourceInfo
+
+		 {
+
+			 set cylinder1Faces;
+
+		 }
+
+ }
+
+ {
+
+	 name pilot0Faces;
+
+	 type faceSet;
+
+	 action delete;
+
+	 source faceToFace;
+
+	 sourceInfo
+
+		 {
+
+			 set cylinder1Faces;
+
+		 }
+
+ }
+ 
+ );
+

@@ -1,0 +1,17 @@
+  
+
+
+   INPUT FILE  sectional/sectionalSettings.in                                                                                                                                                                                                                                  
+ 
+
+ Element mole error >    1.000E-03 or element mol error/reactant mols >    1.000E-06 in following
+
+
+Warning: GENPOL unsteady solver has not converged
+
+See numerical.txt for details
+
+Warning: GENPOL unsteady solver has not converged
+
+See numerical.txt for details
+ Reduce time step and still fails. Convergence failure

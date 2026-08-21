@@ -1,0 +1,8 @@
+PARCELS=parcels
+BASEPARCELS=$(PARCELS)/baseClasses
+DERIVEDPARCELS=$(PARCELS)/derived
+CLOUDS=clouds
+BASECLOUDS=$(CLOUDS)/baseClasses
+DERIVEDCLOUDS=$(CLOUDS)/derived
+INJECTIONMODEL=submodels/Kinematic/InjectionModel/
+LIB = $(FOAM_USER_LIBBIN)/libmmcLagrangianSpray$(MMC_APPLICATION_EXTENSION)

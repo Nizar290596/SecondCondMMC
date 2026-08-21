@@ -1,0 +1,105 @@
+#!/bin/bash
+#*---------------------------------------------------------------------------*\
+#                                       8888888888                              
+#                                       888                                     
+#                                       888                                     
+#  88888b.d88b.  88888b.d88b.   .d8888b 8888888  .d88b.   8888b.  88888b.d88b.  
+#  888 "888 "88b 888 "888 "88b d88P"    888     d88""88b     "88b 888 "888 "88b 
+#  888  888  888 888  888  888 888      888     888  888 .d888888 888  888  888 
+#  888  888  888 888  888  888 Y88b.    888     Y88..88P 888  888 888  888  888 
+#  888  888  888 888  888  888  "Y8888P 888      "Y88P"  "Y888888 888  888  888 
+#------------------------------------------------------------------------------- 
+#
+#License
+#    This file is part of mmcFoam.
+#
+#    mmcFoam is free software: you can redistribute it and/or modify it
+#    under the terms of the GNU General Public License as published by
+#    the Free Software Foundation, either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    mmcFoam is distributed in the hope that it will be useful, but 
+#    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+#    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+#    for more details.
+#
+#    You should have received a copy of the GNU General Public License
+#    along with  mmcFoam.  If not, see <http://www.gnu.org/licenses/>.
+#
+#Description
+#    Script to build the test executable
+#
+#Author
+#    Jan Wilhelm Gärtner <jan.gaertner@outlook.de> Copyright (C) 2022
+#
+#*---------------------------------------------------------------------------*/
+
+#======================================================================
+# Source bashrc of mmcFoam
+#======================================================================
+
+# Source the bashrc of mmcFoam
+
+. ../etc/bashrc
+
+source ${MMC_PROJECT_USER_DIR}/etc/supportFunctions.sh
+
+# Set script to abort on any command that results an error status
+trap '__abort' 0
+set -e
+
+
+#======================================================================
+# Compile and Install Catch2
+#======================================================================
+# Compile the Catch2 library into a static libray
+
+__banner Install Catch2
+
+# if Catch2_install exist do not reinstall
+if [[ ! -d "Catch2_install" ]]; then 
+    if [[ -d "Catch2_build" ]]; then
+        rm -r Catch2_build
+    fi
+
+    mkdir Catch2_build
+
+    cmake -S ./Catch2 -B Catch2_build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=${MMC_PROJECT_USER_DIR}/tests/Catch2_install
+
+
+    if [ __cmake_version_above ]; then 
+        cmake --build Catch2_build --parallel --target install
+    else
+        cmake --build Catch2_build --target install
+    fi
+
+    # clean up
+    rm -r Catch2_build
+fi
+
+#======================================================================
+# Compile unitMesh
+#======================================================================
+cd ${MMC_PROJECT_USER_DIR}/tests/unitMesh/src
+wmake 
+
+
+#======================================================================
+# Compile Test Cases
+#======================================================================
+
+__banner Compile Test Cases
+
+cd ${MMC_PROJECT_USER_DIR}/tests/src
+
+# Build the tests
+wmake -j -debug 
+
+
+#======================================================================
+# Unwind
+#======================================================================
+
+__banner Complete
+
+trap : 0

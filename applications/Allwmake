@@ -1,0 +1,50 @@
+#!/bin/bash
+cd ${0%/*} || exit 1    # run from this directory
+
+
+# Source the mmcFoam bashrc
+. ../etc/bashrc
+source ${MMC_PROJECT_USER_DIR}/etc/supportFunctions.sh
+
+# Set script to abort on any command that results an error status
+trap '__abort' 0
+set -e
+
+# mmcFoam Solvers
+# ===============
+
+#wmake ${@} solvers/mmc/mmcFoam
+#wmake ${@} solvers/mmc/mmcPbeFoam
+#wmake ${@} solvers/mmc/mmcPremixedFoam
+wmake ${@} solvers/mmc/SPFoam
+wmake ${@} solvers/mmc/SPFoamDarmstadt
+wmake ${@} solvers/mmc/SPFoamDRM22
+#wmake ${@} solvers/mmc/mmcRansFoam
+#wmake ${@} solvers/mmc/mmcSpraySynFoam
+#wmake ${@} solvers/mmc/mmcDropletSprayFoam
+
+# mmcFoam DNS Solvers
+# ===================
+
+#wmake ${@} solvers/mmcDNS/mmcDNSFoam
+#wmake ${@} solvers/mmcDNS/mmcDropletSprayDNSFoam
+
+# Make utilities
+# ==============
+
+# Source for check of fftw
+. ${WM_PROJECT_DIR:?}/wmake/scripts/have_fftw
+if have_fftw
+then
+    wmake ${@} utilities/itvInflow
+else
+    __warningBanner "Skip itvInflow library (no FFTW)"
+    echo "Install FFTW with makeFFTW in ThirdParty folder"
+    echo "of OpenFOAM"
+fi
+wmake ${@} utilities/writeSubVolumeSets
+wmake ${@} utilities/pdfMeshDecomposition
+
+
+trap : 0
+# ----------------------------------------------------------------- end-of-file

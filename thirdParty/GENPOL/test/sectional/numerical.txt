@@ -1,0 +1,9 @@
+ GENPOL  -  J.H. KENT, Compuflow Solutions, Sydney, Australia.
+
+
+
+   INPUT FILE  sectional/sectionalSettings.in                                                                                                                                                                                                                                  
+
+  iter   time(s)     T K    Rmax/max  Phimax 
+   10   1.000E-03 1800.   81.      4.36E-09Aj_02_03_0
+   10   1.000E-04 1800.  1.17E-02  3.11E-09Ai_05_01_0

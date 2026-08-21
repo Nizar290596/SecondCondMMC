@@ -1,0 +1,9 @@
+particleChemistryModel/makeParticleChemistryModels.C
+
+particleTDACChemistryModel/makeParticleTDACChemistryModels.C
+particleTDACChemistryModel/reduction/makeParticleChemistryReductionMethods.C
+particleTDACChemistryModel/tabulation/makeParticleChemistryTabulationMethods.C
+
+particleChemistrySolver/makeParticleChemistrySolvers.C
+
+LIB = $(FOAM_USER_LIBBIN)/libmmcChemistryModel$(MMC_APPLICATION_EXTENSION)

@@ -1,0 +1,8 @@
+PARTICLEPROBES=statisticTools/particleStatistics/particleProbes/
+MMCVARIABLES=supportClasses/mmcVariables
+REFERENCEVARIABLE=$(MMCVARIABLES)/referenceVariable
+EVOLMODELS=$(REFERENCEVARIABLE)/evolModels
+SDEMODEL=$(EVOLMODELS)/sde
+ITOSDEMODEL=$(SDEMODEL)/ItoEqn
+EFFICFUNC=atfLES/efficiencyFunctions
+LIB = $(FOAM_USER_LIBBIN)/libmmcSupport$(MMC_APPLICATION_EXTENSION)

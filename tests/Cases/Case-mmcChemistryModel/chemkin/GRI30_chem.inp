@@ -1,0 +1,14 @@
+! GRI-Mech Version 3.0 7/30/99  CHEMKIN-II format
+! See README30 file at anonymous FTP site unix.sri.com, directory gri;
+! WorldWideWeb home page http://www.me.berkeley.edu/gri_mech/ or
+! through http://www.gri.org , under 'Basic  Research', 
+! for additional information, contacts, and disclaimer
+ELEMENTS
+O  H 
+END
+SPECIES
+H       O2      H2      O       OH      H2O      N2 
+END
+REACTIONS
+O2+2H2=>2H2O                              3.870E+04    2.700    9260.00
+END

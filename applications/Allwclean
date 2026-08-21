@@ -1,0 +1,29 @@
+#!/bin/sh
+cd ${0%/*} || exit 1    # run from this directory
+set -x
+
+# mmcFoam Solvers
+# ===============
+
+wclean solvers/mmc/mmcFoam
+wclean solvers/mmc/mmcPbeFoam
+wclean solvers/mmc/mmcPremixedFoam
+wclean solvers/mmc/SPFoam
+wclean solvers/mmc/SPFoamDarmstadt
+wclean solvers/mmc/SPFoamDRM22
+wclean solvers/mmc/mmcRansFoam
+wclean solvers/mmc/mmcSpraySynFoam
+wclean solvers/mmc/mmcDropletSprayFoam
+
+# mmcFoam DNS Solvers
+# ===================
+
+wclean solvers/mmcDNS/mmcDNSFoam
+wclean solvers/mmcDNS/mmcDropletSprayDNSFoam
+
+# Make utilities
+# ==============
+wclean ./utilities/itvInflow
+wclean ./utilities/writeSubVolumeSets
+# ----------------------------------------------------------------- end-of-file
+

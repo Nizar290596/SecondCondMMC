@@ -1,0 +1,11 @@
+platforms/
+dynamicCode/
+processor*/
+postProcessing/
+VTK/
+logs/
+log.*
+*.o
+*.so
+*.dep
+*.swp

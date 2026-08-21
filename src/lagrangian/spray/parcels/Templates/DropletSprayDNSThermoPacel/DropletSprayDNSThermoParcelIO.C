@@ -1,0 +1,322 @@
+/*---------------------------------------------------------------------------*\
+                                       8888888888                              
+                                       888                                     
+                                       888                                     
+  88888b.d88b.  88888b.d88b.   .d8888b 8888888  .d88b.   8888b.  88888b.d88b.  
+  888 "888 "88b 888 "888 "88b d88P"    888     d88""88b     "88b 888 "888 "88b 
+  888  888  888 888  888  888 888      888     888  888 .d888888 888  888  888 
+  888  888  888 888  888  888 Y88b.    888     Y88..88P 888  888 888  888  888 
+  888  888  888 888  888  888  "Y8888P 888      "Y88P"  "Y888888 888  888  888 
+------------------------------------------------------------------------------- 
+
+License
+    This file is part of mmcFoam.
+
+    mmcFoam is free software: you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    mmcFoam is distributed in the hope that it will be useful, but 
+    WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY 
+    or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+    for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with mmcFoam. If not, see <http://www.gnu.org/licenses/>.
+
+\*---------------------------------------------------------------------------*/
+
+#include "DropletSprayDNSThermoParcel.H"
+#include "IOstreams.H"
+
+// * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
+
+template<class ParcelType>
+Foam::string Foam::DropletSprayDNSThermoParcel<ParcelType>::propertyList_ =
+    Foam::DropletSprayDNSThermoParcel<ParcelType>::propertyList();
+
+
+template<class ParcelType>
+const std::size_t Foam::DropletSprayDNSThermoParcel<ParcelType>::sizeofFields
+(
+    sizeof(DropletSprayDNSThermoParcel<ParcelType>)
+  - offsetof(DropletSprayDNSThermoParcel<ParcelType>, T_)
+);
+
+
+// * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
+
+template<class ParcelType>
+Foam::DropletSprayDNSThermoParcel<ParcelType>::DropletSprayDNSThermoParcel
+(
+    const polyMesh& mesh,
+    Istream& is,
+    bool readFields,
+    bool newFormat
+)
+:
+    ParcelType(mesh, is, readFields, newFormat),
+    T_(0.0),
+    Cp_(0.0),
+    jFuel_(-1),
+    Tvap_(0.0)
+{
+    if (readFields)
+    {
+        if (is.format() == IOstreamOption::ASCII)
+        {
+            is  >> T_ >> Cp_ >> mass0_ 
+                >> TInf_Euler_ >> TInf_SP_
+                >> YInf_Euler_ >> YInf_SP_;
+        }
+        else if (!is.checkLabelSize<>() || !is.checkScalarSize<>())
+        {
+            // Non-native label or scalar size
+
+            is.beginRawRead();
+
+            readRawScalar(is, &T_);
+            readRawScalar(is, &Cp_);
+            readRawScalar(is, &mass0_);            
+            readRawScalar(is, &TInf_Euler_);
+            readRawScalar(is, &TInf_SP_);
+            readRawScalar(is, &YInf_Euler_);
+            readRawScalar(is, &YInf_SP_);
+
+            is.endRawRead();
+        }
+        else
+        {
+            is.read(reinterpret_cast<char*>(&T_), sizeofFields);
+        }
+    }
+
+    is.check(FUNCTION_NAME);
+    
+    initStatisticalSampling();
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::DropletSprayDNSThermoParcel<ParcelType>::readFields(CloudType& c)
+{
+    const bool readOnProc = c.size();
+
+    ParcelType::readFields(c);
+
+    IOField<scalar> T(c.newIOobject("T", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, T);
+
+    IOField<scalar> Cp(c.newIOobject("Cp", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, Cp);
+
+    IOField<scalar> mass0(c.newIOobject("mass0", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, mass0);
+
+    IOField<scalar> TInf_Euler(c.newIOobject("TInf_Euler", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, TInf_Euler);
+
+    IOField<scalar> TInf_SP(c.newIOobject("TInf_SP", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, TInf_SP);
+
+    IOField<scalar> YInf_Euler(c.newIOobject("YInf_Euler", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, YInf_Euler);
+
+    IOField<scalar> YInf_SP(c.newIOobject("YInf_SP", IOobject::MUST_READ), readOnProc);
+    c.checkFieldIOobject(c, YInf_SP);
+
+
+    label i = 0;
+    for (DropletSprayDNSThermoParcel<ParcelType>& p : c)
+    {
+        p.T_ = T[i];
+        p.Cp_ = Cp[i];
+        p.mass0_ = mass0[i];
+        p.TInf_Euler_ = TInf_Euler[i];
+        p.TInf_SP_ = TInf_SP[i];
+        p.YInf_Euler_ = YInf_Euler[i];
+        p.YInf_SP_ = YInf_SP[i];
+
+        ++i;
+    }
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::DropletSprayDNSThermoParcel<ParcelType>::writeFields(const CloudType& c)
+{
+    ParcelType::writeFields(c);
+
+    const label np = c.size();
+    const bool writeOnProc = c.size();
+
+    IOField<scalar> T(c.newIOobject("T", IOobject::NO_READ), np);
+    IOField<scalar> Cp(c.newIOobject("Cp", IOobject::NO_READ), np);
+    IOField<scalar> mass0(c.newIOobject("mass0", IOobject::NO_READ), np);
+    IOField<scalar> TInf_Euler(c.newIOobject("TInf_Euler", IOobject::NO_READ), np);
+    IOField<scalar> TInf_SP(c.newIOobject("TInf_SP", IOobject::NO_READ), np);
+    IOField<scalar> YInf_Euler(c.newIOobject("YInf_Euler", IOobject::NO_READ), np);
+    IOField<scalar> YInf_SP(c.newIOobject("YInf_SP", IOobject::NO_READ), np);
+
+    label i = 0;
+    for (const DropletSprayDNSThermoParcel<ParcelType>& p : c)
+    {
+        T[i] = p.T_;
+        Cp[i] = p.Cp_;
+        mass0[i] = p.mass0_;
+        TInf_Euler[i] = p.TInf_Euler_;
+        TInf_SP[i] = p.TInf_SP_;
+        YInf_Euler[i] = p.YInf_Euler_;
+        YInf_SP[i] = p.YInf_SP_;
+
+        ++i;
+    }
+
+    T.write(writeOnProc);
+    Cp.write(writeOnProc);
+    mass0.write(writeOnProc); 
+    TInf_Euler.write(writeOnProc);
+    TInf_SP.write(writeOnProc);
+    YInf_Euler.write(writeOnProc);
+    YInf_SP.write(writeOnProc);
+}
+
+
+template<class ParcelType>
+void Foam::DropletSprayDNSThermoParcel<ParcelType>::writeProperties
+(
+    Ostream& os,
+    const wordRes& filters,
+    const word& delim,
+    const bool namesOnly
+) const
+{
+    ParcelType::writeProperties(os, filters, delim, namesOnly);
+
+    #undef  writeProp
+    #define writeProp(Name, Value)                                            \
+        ParcelType::writeProperty(os, Name, Value, namesOnly, delim, filters)
+
+    writeProp("T", T_);
+    writeProp("Cp", Cp_);
+    writeProp("mass", mass0_);    
+    writeProp("TInf_Euler", TInf_Euler_);
+    writeProp("TInf_SP", TInf_SP_);
+    writeProp("YInf_Euler", YInf_Euler_);
+    writeProp("YInf_SP", YInf_SP_);
+
+    #undef writeProp
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::DropletSprayDNSThermoParcel<ParcelType>::readObjects
+(
+    CloudType& c,
+    const objectRegistry& obr
+)
+{
+    ParcelType::readFields(c);
+
+    if (!c.size()) return;
+
+    auto& T = cloud::lookupIOField<scalar>("T", obr);
+    auto& Cp = cloud::lookupIOField<scalar>("Cp", obr);
+    auto& mass0 = cloud::lookupIOField<scalar>("mass0", obr);
+    auto& TInf_Euler = cloud::lookupIOField<scalar>("TInf_Euler", obr);
+    auto& TInf_SP = cloud::lookupIOField<scalar>("TInf_SP", obr);
+    auto& YInf_Euler = cloud::lookupIOField<scalar>("YInf_Euler", obr);
+    auto& YInf_SP = cloud::lookupIOField<scalar>("YInf_SP", obr);
+
+    label i = 0;
+    for (DropletSprayDNSThermoParcel<ParcelType>& p : c)
+    {
+        p.T_ = T[i];
+        p.Cp_ = Cp[i];
+        p.mass0_ = mass0[i];
+        p.TInf_Euler_ = TInf_Euler[i];
+        p.TInf_SP_ = TInf_SP[i];
+        p.YInf_Euler_ = YInf_Euler[i];
+        p.YInf_SP_ = YInf_SP[i];
+
+        ++i;
+    }
+}
+
+
+template<class ParcelType>
+template<class CloudType>
+void Foam::DropletSprayDNSThermoParcel<ParcelType>::writeObjects
+(
+    const CloudType& c,
+    objectRegistry& obr
+)
+{
+    ParcelType::writeObjects(c, obr);
+
+    const label np = c.size();
+
+    auto& T = cloud::createIOField<scalar>("T", np, obr);
+    auto& Cp = cloud::createIOField<scalar>("Cp", np, obr);
+    auto& mass0 = cloud::createIOField<scalar>("mass", np, obr);
+    auto& TInf_Euler = cloud::createIOField<scalar>("TInf_Euler", np, obr);
+    auto& TInf_SP = cloud::createIOField<scalar>("TInf_SP", np, obr);
+    auto& YInf_Euler = cloud::createIOField<scalar>("YInf_Euler", np, obr);
+    auto& YInf_SP = cloud::createIOField<scalar>("YInf_SP", np, obr);
+
+    label i = 0;
+    for (const DropletSprayDNSThermoParcel<ParcelType>& p : c)
+    {
+        T[i] = p.T_;
+        Cp[i] = p.Cp_;
+        mass0[i] = p.mass0_;
+        TInf_Euler[i] = p.TInf_Euler_;
+        YInf_Euler[i] = p.YInf_Euler_;
+        TInf_SP[i] = p.TInf_SP_;
+        YInf_SP[i] = p.YInf_SP_;
+
+        ++i;
+    }
+}
+
+
+// * * * * * * * * * * * * * * * IOstream Operators  * * * * * * * * * * * * //
+
+template<class ParcelType>
+Foam::Ostream& Foam::operator<<
+(
+    Ostream& os,
+    const DropletSprayDNSThermoParcel<ParcelType>& p
+)
+{
+    if (os.format() == IOstreamOption::ASCII)
+    {
+        os  << static_cast<const ParcelType&>(p)
+            << token::SPACE << p.T()
+            << token::SPACE << p.Cp()
+            << token::SPACE << p.mass0()
+            << token::SPACE << p.TInf_Euler_
+            << token::SPACE << p.TInf_SP_
+            << token::SPACE << p.YInf_Euler_
+            << token::SPACE << p.YInf_SP_;
+    }
+    else
+    {
+        os  << static_cast<const ParcelType&>(p);
+        os.write
+        (
+            reinterpret_cast<const char*>(&p.T_),
+            DropletSprayDNSThermoParcel<ParcelType>::sizeofFields
+        );
+    }
+
+    os.check(FUNCTION_NAME);
+    return os;
+}
+
+
+// ************************************************************************* //

@@ -1,0 +1,161 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  2312                                  |
+|   \\  /    A nd           | Website:  www.openfoam.com                      |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+FoamFile
+{
+    version     2.0;
+    format      binary;
+    arch        "LSB;label=32;scalar=64";
+    class       dictionary;
+    location    "constant";
+    object      sprayCloudProperties;
+}
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+solution
+{
+    active          true;
+    coupled         yes;
+    cellValueSourceCorrection no;
+    maxCo           0.3;
+    calcFrequency   1;
+    maxTrackTime    1;
+    sourceTerms
+    {
+        schemes
+        {
+            U               semiImplicit 1;
+            rho             explicit 1;
+            Yi              explicit 1;
+            h               explicit 1;
+        }
+        resetOnStartup  false;
+    }
+    interpolationSchemes
+    {
+        rho             cell;
+        U               cellPoint;
+        thermo:mu       cell;
+        T               cell;
+        p               cell;
+        f               cell;
+        fGradSqr        cell;
+        Cp              cell;
+        kappa           cell;
+        C2H5OH          cell;
+        CO2             cell;
+        O2              cell;
+        H2O             cell;
+        N2              cell;
+    }
+    integrationSchemes
+    {
+        U               Euler;
+        T               CrankNicolson;
+    }
+}
+
+constantProperties
+{
+    T0              315;
+    Cp0             2460;
+    Tvap0           351.5;
+}
+
+subModels
+{
+    particleForces
+    {
+        sphereDrag      ;
+    }
+    dropletToMMCModel nearestNeighbor;
+    dispersionModel none;
+    patchInteractionModel standardWallInteraction;
+    stochasticCollisionModel none;
+    heatTransferModel none;
+    surfaceFilmModel none;
+    radiation       none;
+    LiquidPropertiesModel UDF;
+    standardWallInteractionCoeffs
+    {
+        type            rebound;
+    }
+    UDFCoeffs
+    {
+        saturationPressure
+        {
+            type            coded;
+            code            #{
+               std::vector<scalar> a {59.796, -6595.0, -5.0474, 6.3e-07, 2.0};  // C2H5OH
+               return ( std::exp(a[0]+a[1]/x+a[2]*std::log(x)+a[3]*std::pow(x,a[4])) );
+           #};
+        }
+        saturationTemperature
+        {
+            type            coded;
+            code            #{
+                std::vector<scalar> a {3.5154e+02, 2.5342e+01, 2.2231e+00, 2.0784e-01};  // C2H5OH
+                scalar P1 = log(x/101325.0);
+                return ( a[0]+a[1]*P1+a[2]*P1*P1+a[3]*P1*P1*P1 );
+           #};
+        }
+        binaryDiffusionCoefficient 5.74e-05;
+        latentHeat
+        {
+            type            coded;
+            code            #{
+           scalar Tc = 516.25;
+           scalar T1 = x/Tc;
+           std::vector<scalar> a {958345.091059, -0.4134, 0.75362, 0.0};  // C2H5OH
+           return ( a[0]*pow(1.0-T1,a[1]+a[2]*T1+a[3]*T1*T1) );
+           #};
+        }
+        liquidHeatCapacity
+        {
+            type            coded;
+            code            #{
+               scalar a_in = 3086.27;
+               scalar b_in = -13.9017;
+               scalar c_in = 0.0449525;
+               scalar d_in = -1.89534803995077e-05;
+               scalar e_in = 0;
+               scalar f_in = 0;
+               return ((((f_in*x+e_in)*x+d_in)*x +c_in)*x+b_in)*x+a_in;           #};
+        }
+        liquidAbsoluteEnthalpy
+        {
+            type            coded;
+            code            #{
+            std::vector<scalar> a {-6752827.25039109, 2052.57331394213, -0.060995463326749, -0.00238048724015426, 1.30130890620591e-05};  // C2H5OH
+            return ( a[0]+a[1]*x+a[2]*x*x+a[3]*x*x*x+a[4]*x*x*x*x );
+           #};
+        }
+        rhoL
+        {
+            type            coded;
+            code            #{
+                std::vector<scalar> a {70.1308387, 0.26395, 516.25, 0.2367, 0.0};  // C2H5OH
+                const scalar T = std::min(a[2],x);
+                return ( a[0]/pow(a[1],1.0+pow(1.0-T/a[2],a[3])) );
+           #};
+        }
+    }
+    nearestNeighborCoeffs
+    {
+        useSPProps      false;
+        lambda_x        true;
+        lambda_f        false;
+        lambda_T        true;
+        ri              0.00025856;
+        fm              0.0072;
+        Tm              40;
+    }
+    dropletComponent C2H5OH;
+}
+
+
+// ************************************************************************* //
