@@ -166,6 +166,11 @@ mmcFoam is documented on several levels:
 
 **Note:** An example `cloudProperties` file can be found in [exampleCloudProperties](./docs/exampleCloudProperties.md).
 
+**Note:** An overview of the `SPFoam` solver with second conditioning enabled — the
+conditioning variables, the two mixing levels, subset chemistry and the Kernel Estimator
+coupling — can be found in
+[secondConditioningOverview](./docs/secondConditioningOverview.md).
+
 ---
 
 ## PUBLICATION
