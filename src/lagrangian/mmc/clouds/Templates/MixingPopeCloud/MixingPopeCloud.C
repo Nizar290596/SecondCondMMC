@@ -25,6 +25,7 @@ License
 
 #include "MixingPopeCloud.H"
 #include "CloudMixingModel.H"
+#include "interpolationCellPoint.H"
 
 
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
@@ -79,6 +80,36 @@ void Foam::MixingPopeCloud<CloudType>::setModels(const mmcVarSet& Xi)
  
             Info << "Second-conditioning mixing model: "
                  << scModelType << endl;
+
+            // The W(phi) = A*(1-phi)*exp[Z*(phi-1)] progress-variable source
+            // has been removed: it was non-negative for every phi <= 1, so it
+            // drove all particles to phi = 1 regardless of local conditions.
+            // phi is now relaxed towards the Eulerian progress variable c with
+            // timescale tauC instead. Fail loudly on cases that still set the
+            // old keys rather than silently changing their behaviour.
+            if
+            (
+                scDict.found("A_phi")
+             || scDict.found("Z_phi")
+            )
+            {
+                FatalErrorInFunction
+                    << "secondConditioning contains A_phi/Z_phi, but the "
+                    << "W(phi) progress-variable source has been removed." << nl
+                    << "phi is now relaxed towards the Eulerian progress "
+                    << "variable c over a timescale tauC." << nl
+                    << "Remove A_phi and Z_phi and set tauC instead."
+                    << exit(FatalError);
+            }
+
+            if (!scDict.found("tauC"))
+            {
+                WarningInFunction
+                    << "secondConditioning does not set tauC; defaulting to 0, "
+                    << "i.e. phi is set equal to the Eulerian progress "
+                    << "variable c at the particle position every time step."
+                    << endl;
+            }
         }
     }
 }
@@ -148,6 +179,11 @@ Foam::MixingPopeCloud<CloudType>::MixingPopeCloud
         this->cloudProperties_.subOrEmptyDict("secondConditioning")
             .template lookupOrDefault<scalar>("tauOU", 1.0)
     ),
+    secondCondTauC_
+    (
+        this->cloudProperties_.subOrEmptyDict("secondConditioning")
+            .template lookupOrDefault<scalar>("tauC", 0.0)
+    ),
     secondCondTu_
     (
         this->cloudProperties_.subOrEmptyDict("secondConditioning")
@@ -158,16 +194,7 @@ Foam::MixingPopeCloud<CloudType>::MixingPopeCloud
         this->cloudProperties_.subOrEmptyDict("secondConditioning")
             .template lookupOrDefault<scalar>("Tb", 2000.0)
     ),
-    secondCondAPhi_
-    (
-        this->cloudProperties_.subOrEmptyDict("secondConditioning")
-            .template lookupOrDefault<scalar>("A_phi", 0.0)
-    ),
-    secondCondZPhi_
-    (
-        this->cloudProperties_.subOrEmptyDict("secondConditioning")
-            .template lookupOrDefault<scalar>("Z_phi", 0.0)
-    )
+    phiDeviation_(0.0)
 
 {
     Info << "Creating mixing Pope Particle Cloud." << nl << endl;
@@ -242,6 +269,11 @@ Foam::MixingPopeCloud<CloudType>::MixingPopeCloud
         this->cloudProperties_.subOrEmptyDict("secondConditioning")
             .template lookupOrDefault<scalar>("tauOU", 1.0)
     ),
+    secondCondTauC_
+    (
+        this->cloudProperties_.subOrEmptyDict("secondConditioning")
+            .template lookupOrDefault<scalar>("tauC", 0.0)
+    ),
     secondCondTu_
     (
         this->cloudProperties_.subOrEmptyDict("secondConditioning")
@@ -252,16 +284,7 @@ Foam::MixingPopeCloud<CloudType>::MixingPopeCloud
         this->cloudProperties_.subOrEmptyDict("secondConditioning")
             .template lookupOrDefault<scalar>("Tb", 2000.0)
     ),
-    secondCondAPhi_
-    (
-        this->cloudProperties_.subOrEmptyDict("secondConditioning")
-            .template lookupOrDefault<scalar>("A_phi", 0.0)
-    ),
-    secondCondZPhi_
-    (
-        this->cloudProperties_.subOrEmptyDict("secondConditioning")
-            .template lookupOrDefault<scalar>("Z_phi", 0.0)
-    )
+    phiDeviation_(0.0)
     
 {
     Info << "Creating mixing Pope Particle Cloud." << nl << endl;
@@ -303,31 +326,91 @@ Foam::MixingPopeCloud<CloudType>::~MixingPopeCloud()
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template<class CloudType>
-void Foam::MixingPopeCloud<CloudType>::updatePhiReaction(const scalar deltaT)
+void Foam::MixingPopeCloud<CloudType>::updatePhi(const scalar deltaT)
 {
-    // Apply the progress-variable reaction source W(φ) = A·(1−φ)·exp[Z·(φ−1)]
-    // to every particle for one time step.  Applied to all particles (not just
-    // flagged ones) so that φ is consistent across the entire cloud before
-    // the second conditioning runs.
-    const scalar A = secondCondAPhi_;
-    const scalar Z = secondCondZPhi_;
- 
-    if (A <= SMALL)
-        return;  // no-op when reaction coefficient is zero
- 
+    // Relax the particle progress variable towards the Eulerian progress
+    // variable c interpolated at the particle position:
+    //
+    //     phi <- phi + (1 - exp(-dt/tauC)) * (c_p - phi)
+    //
+    // The update is the exact solution of dphi/dt = (c_p - phi)/tauC for a
+    // constant c_p, so it carries no truncation error and is independent of
+    // dt -- the same construction used by OUStateUpdate() for omega.
+    //
+    // Applied to ALL particles (not only flagged ones) so phi is consistent
+    // across the whole cloud before the second conditioning runs, and applied
+    // AFTER mixing().Smix() so it acts on the mixed phi.
+    //
+    // This replaces the former W(phi) = A*(1-phi)*exp[Z*(phi-1)] source. That
+    // term was non-negative for every phi <= 1 and had no dependence on
+    // temperature, mixture or proximity to a flame, so it drove every particle
+    // in the domain monotonically to phi = 1 -- making phi a function of
+    // residence time rather than of reaction, and leaving
+    // phi_deg = phi*exp(beta*omega) as pure OU noise once it saturated.
+    const scalar tauC = secondCondTauC_;
+
+    if (tauC < 0)
+        return;
+
+    // tauC == 0 is the limiting case of instantaneous relaxation, i.e. phi is
+    // a pure interpolation of c (the contract of referenceType 'interpolated'
+    // in mmcPremixedFoam). Guard the exponential against division by zero.
+    const scalar relax =
+        (tauC > SMALL) ? (1.0 - Foam::exp(-deltaT/tauC)) : 1.0;
+
+    // The Eulerian progress variable is registered by the solver's
+    // createFields.H. It is deliberately not part of the mmcVarSet, so it is
+    // looked up from the object registry here rather than through Xi.
+    if (!this->mesh().objectRegistry::foundObject<volScalarField>("c"))
+    {
+        FatalErrorInFunction
+            << "Second conditioning is enabled but the Eulerian progress "
+            << "variable field 'c' is not registered." << nl
+            << "The solver must create it (see SPFoam createFields.H) and "
+            << "update it each time step before the particles are evolved."
+            << exit(FatalError);
+    }
+
+    const volScalarField& cField =
+        this->mesh().objectRegistry::lookupObject<volScalarField>("c");
+
+    interpolationCellPoint<scalar> c_intp_(cField);
+
+    // Diagnostics: mean |phi - c_p| over the cloud, so drift of phi away from
+    // the resolved progress variable is directly observable in the log.
+    scalar sumWt = 0.0;
+    scalar sumAbsDev = 0.0;
+
     forAllIters(*this, iter)
     {
+        const scalar cP = c_intp_.interpolate
+        (
+            iter().position(), iter().cell(), iter().face()
+        );
+
         scalar& phi = iter().phi();
-        phi += deltaT * A * (1.0 - phi) * Foam::exp(Z * (phi - 1.0));
+
+        phi += relax*(cP - phi);
         phi  = max(0.0, min(1.0, phi));
 
-	// For non-subset particles (omegaOU==0 always), phiModified = phi.
-        // For subset particles, updateOUProcess() recomputes phiModified
-        // as phi * exp(beta * omegaOU) immediately after this call.
+        const scalar w = iter().wt();
+        sumWt     += w;
+        sumAbsDev += w*mag(phi - cP);
+
+        // For non-subset particles (omegaOU == 0 always), phiModified = phi.
+        // For subset particles, updateOUProcess() recomputes phiModified as
+        // phi*exp(beta*omegaOU) immediately after this call.
         if (iter().secondCondFlag() != 1)
             iter().phiModified() = phi;
-
     }
+
+    reduce(sumWt, sumOp<scalar>());
+    reduce(sumAbsDev, sumOp<scalar>());
+
+    phiDeviation_ = (sumWt > SMALL) ? sumAbsDev/sumWt : 0.0;
+
+    Info<< "    [secondCond] mean |phi - c| = " << phiDeviation_
+        << " (tauC = " << tauC << " s, relax = " << relax << ")" << endl;
 }
  
  
@@ -392,7 +475,10 @@ void Foam::MixingPopeCloud<CloudType>::setParticleProperties
         (secondCondR_ > 0 && this->rndGen_.Random() < secondCondR_) ? 1 : 0;
  
     // Initialize progress variable from particle temperature
-    // phi = (T - Tu) / (Tb - Tu), clamped to [0, 1]
+    // phi = (T - Tu) / (Tb - Tu), clamped to [0, 1].
+    // This is only the initial condition: from here on phi is relaxed towards
+    // the Eulerian progress variable c by updatePhi() and mixed pairwise by
+    // the first-conditioning model.
     {
         const scalar dT = secondCondTb_ - secondCondTu_;
         if (dT > SMALL)

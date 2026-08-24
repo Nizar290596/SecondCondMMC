@@ -227,6 +227,34 @@
     );
 
 
+    //- Eulerian reaction progress variable used to anchor the particle-carried
+    //  progress variable phi of the second-conditioning extension.
+    //  Recomputed algebraically from the LES temperature every time step in
+    //  SPFoam.C, just before the particles are evolved:
+    //
+    //      c = clamp((T - Tu)/(Tb - Tu), 0, 1)
+    //
+    //  Tu and Tb are the ones already read by the cloud from the
+    //  secondConditioning sub-dictionary. The field is deliberately kept out of
+    //  the mmcVarSet so that neither MMCcurl's reference space nor the XiR slot
+    //  ordering nor XiEqn.H are affected by it.
+    Info<< "Creating field c (Eulerian progress variable)\n" << endl;
+    volScalarField c
+    (
+        IOobject
+        (
+            "c",
+            runTime.timeName(),
+            mesh,
+            IOobject::NO_READ,
+            IOobject::AUTO_WRITE
+        ),
+        mesh,
+        dimensionedScalar("c", dimless, 0.0),
+        zeroGradientFvPatchScalarField::typeName
+    );
+
+
     Info << "Creating field gradRho" << nl << endl;
     volVectorField gradRho
     (

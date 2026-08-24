@@ -51,7 +51,7 @@ unmodified baseline solver on every one of them:
 
 | Site | Behaviour when enabled |
 |---|---|
-| `moveParticles.H:51` | Runs steps 3–5 (φ reaction, OU advance, second mixing) |
+| `moveParticles.H:51` | Runs steps 3–5 (φ relaxation, OU advance, second mixing) |
 | `MMCcurl.C:217` | First-level mixing switches from composition to **φ only** |
 | `ReactingPopeParticle.C:61` | Unflagged particles return before chemistry |
 | `BalanceReactModel.C:70` | Unflagged particles are excluded from the load-balanced reaction list |
@@ -71,7 +71,7 @@ full cloud fields — written, read back on restart, and available to particle s
 |---|---|---|---|
 | `secondCondFlag` | Subset membership, `0` or `1` | Bernoulli: `rndGen().Random() < R` | Never — fixed for the particle's life |
 | `omegaOU` | OU state ω, stationary *N*(0,1) | `N(0,1)` if flagged, else stays 0 | `updateOUProcess()`, flagged only |
-| `phi` | Reaction progress variable φ ∈ [0,1] | `(T - Tu)/(Tb - Tu)`, clamped | Mixed by level 1, reacted by *W*(φ) |
+| `phi` | Reaction progress variable φ ∈ [0,1] | `(T - Tu)/(Tb - Tu)`, clamped | Mixed by level 1, then relaxed toward the Eulerian `c` |
 | `phiModified` | Modified progress variable φ° | `phi * exp(beta * omegaOU)` | Recomputed each step from φ and ω |
 
 ```cpp
@@ -129,19 +129,32 @@ second level.
 The second level conditions on **φ°**, a progress variable perturbed by an independent
 Ornstein–Uhlenbeck process. Three ingredients:
 
-**1 · the progress variable and its source.** φ starts as a normalised temperature and is
-then driven by a one-step explicit source applied to **ALL** particles, clamped back into
-[0,1] (`MixingPopeCloud.C:306-331`):
+**1 · the progress variable and its anchoring.** φ is seeded from the particle temperature
+at injection, mixed pairwise by level 1, and then relaxed towards the **Eulerian progress
+variable** `c` interpolated at the particle position, for **ALL** particles
+(`MixingPopeCloud::updatePhi`):
 
 ```
-W(phi) = A * (1 - phi) * exp[ Z * (phi - 1) ]
+c      = clamp((T_LES - Tu)/(Tb - Tu), 0, 1)     // SPFoam.C, each time step
+c_p    = interpolate(c) at the particle position
 
-phi <- clamp( phi + dt * W(phi), 0, 1 )
+phi   <- phi + (1 - exp(-dt/tauC)) * (c_p - phi)
+phi   <- clamp(phi, 0, 1)
 ```
 
-`A = A_phi`, `Z = Z_phi`. The function is an Arrhenius-like progress-variable source:
-maximal at φ = 0 when *Z* is small, sharply suppressed away from φ = 1 as *Z* grows. If
-`A_phi <= SMALL` the whole routine returns immediately and φ never reacts.
+The update is the exact solution of `dphi/dt = (c_p - phi)/tauC` for constant `c_p`, so it
+is independent of `dt` — the same construction `OUStateUpdate()` uses for ω. `tauC -> 0`
+makes φ a pure interpolation of `c`; `tauC -> inf` makes it free-running.
+
+> **Removed: the `W(φ)` source.** Earlier versions drove φ with
+> `W(φ) = A(1−φ)·exp[Z(φ−1)]`. That term is **non-negative for every φ ≤ 1** and has no
+> dependence on temperature, mixture, or proximity to a flame, so it drove *every* particle
+> in the domain monotonically to φ = 1 — cold reactants included — on a timescale of about
+> `[ln(1/ε) + e^Z/Z]/A`. φ became a function of residence time rather than of reaction, and
+> once it saturated `φ° = φ·exp(βω)` degenerated into **pure OU noise**. Conditioning the
+> level-2 tree on that pairs particles at random and averages their `Y`, `T`, `hA`, which
+> homogenises composition and extinguishes the flame. Cases still setting `A_phi`/`Z_phi`
+> now fail with a `FatalError` rather than silently changing behaviour.
 
 **2 · the OU process.** ω is integrated with an *exact* discrete update — no truncation
 error, valid at any Δt (`OUProcessUpdate.H:79-89`):
@@ -167,9 +180,13 @@ multiplicative perturbation of the progress variable whose spread is set by β a
 correlation time is set by τ. Setting β = 0 collapses φ° onto φ and makes the second
 level a purely deterministic re-conditioning on progress.
 
-Steps 2 and 3 are applied together to **FLAGGED** particles only
-(`MixingPopeCloud.C:334-360`); for unflagged particles φ° is kept equal to φ inside
-`updatePhiReaction()` instead (`MixingPopeCloud.C:327-328`).
+Steps 2 and 3 are applied together to **FLAGGED** particles only, in
+`MixingPopeCloud::updateOUProcess`; for unflagged particles φ° is kept equal to φ inside
+`updatePhi()` instead.
+
+Note that `exp(βω)` with ω ~ *N*(0,1) has mean `exp(β²/2) > 1`, so φ° is biased high
+relative to φ, and its spread grows fast: at β = 1 the 5–95% range of the multiplier already
+spans a factor of ~27, enough to swamp whatever physical content φ carries. Keep β small.
 
 ---
 
@@ -185,7 +202,7 @@ run (`SPFoam.C:170`). Order inside that block is load-bearing.
 flowchart TD
     S1["1 · inflowBoundary().inflow()<br/><i>ALL — flag, φ, ω drawn here</i>"]
     S2["2 · mixing().Smix()<br/><i>ALL — writes φ only</i>"]
-    S3["3 · updatePhiReaction(Δt)<br/><i>ALL — writes φ, and φ° for unflagged</i>"]
+    S3["3 · updatePhi(Δt)<br/><i>ALL — relax φ → c_LES; writes φ, and φ° for unflagged</i>"]
     S4["4 · updateOUProcess(Δt)<br/><i>FLAGGED — writes ω, φ°</i>"]
     S5["5 · secondCondMixing().Smix()<br/><i>FLAGGED — writes Y, T, hA</i>"]
     S6["6 · solve(pSets[pSi], td)<br/><i>ALL — move, XiR sde, number control</i>"]
@@ -201,11 +218,11 @@ flowchart TD
 
 Why this order and not another:
 
-- **Step 3 after step 2** — `Smix()` completes for the whole cloud before *W*(φ) fires, so
-  the reaction acts on post-mixing φ values rather than interleaving mixing and reaction
+- **Step 3 after step 2** — `Smix()` completes for the whole cloud before the relaxation
+  fires, so it acts on post-mixing φ values rather than interleaving mixing and relaxation
   particle-by-particle.
-- **Step 4 after step 3** — φ° must reflect the *reacted* φ, so the OU advance and the φ°
-  recompute happen together, after the source.
+- **Step 4 after step 3** — φ° must reflect the *anchored* φ, so the OU advance and the φ°
+  recompute happen together, after the relaxation.
 - **Step 5 after step 4** — the second level reads φ° as its dominant k-d tree split axis.
   A stale φ° would sort particles into the wrong bins.
 - **Step 7 last** — chemistry integrates the composition the second level has just
@@ -303,14 +320,28 @@ of every reference axis, normalises it, and splits on whichever is largest
 (`mixParticleModel.C:906-986`):
 
 ```
-split axis   i* = argmax_i ( max_i - min_i ) / Xii_i
-ncond = 3 + i*
+physical axes   :  ( max - min ) / r_i          -> ncond = 0, 1, 2
+reference axes  :  ( max - min ) / Xii_i        -> ncond = 3 + i
+split axis      :  whichever normalised extent is largest
 ```
 
-The `3 +` offset points `lessArg` past the three physical coordinates
-(`mixParticleModel.H:167-186`), so physical position is never a split axis — the
-physical-space branches are commented out (`mixParticleModel.C:937-956`). Because `Xii`
-*divides*, a **small** normaliser makes an axis **more** likely to be chosen.
+Because the normalisers *divide*, a **small** value makes an axis **more** likely to be
+chosen — so tightening `phiMod_m` gives φ° more weight.
+
+The two levels use **different searches**. `MMCcurl` uses the inherited
+`mixParticleModel::KkdTreeLikeSearch`, whose physical-space branches are commented out
+(`mixParticleModel.C:937-956`): only `XiR` axes are candidates. That is correct there,
+because its reference variables *are* the shadow positions and so supply locality
+themselves.
+
+`secondCondMMCcurl` uses its own `findPairsSC` / `kdTreeSearchSC`, mirroring
+`premixedMixParticleModel::premixedkdTreeLikeSearch`, in which the physical coordinates
+compete against the reference axes. Without that, any `phiMod_m` tight enough to make φ°
+dominant would remove the only locality mechanism in the level-2 space and the model would
+start mixing composition between particles at opposite ends of the domain. The shared base
+implementation is left untouched. `lessArg` (`mixParticleModel.H:167-186`) already
+dispatches `ncond < 3` to `position()[ncond]` and `ncond >= 3` to `XiR()[ncond-3]`, so it
+needed no change.
 
 Recursion stops when a group holds two or three particles; those become the pairs and
 triples that `SmixList()` dispatches — a triple is mixed as two overlapping pairs, (1,2)
@@ -357,7 +388,8 @@ mixExtent = 1 - exp( -dt / tau_mix )
 
 `vb` is the sub-grid burning-velocity factor built each PIMPLE iteration in
 `SPFoam.C:124-142`; Δ_E is the LES filter width. If either diffusivity sum underflows the
-pair is skipped entirely.
+pair is skipped entirely. Only `CE` enters — `CL` is accepted for dictionary compatibility
+with `MMCcurl` and warns if set to anything other than its default.
 
 Then the mix itself — a weighted pair mean relaxed by `mixExtent`, applied to exactly
 three quantities (`secondCondMMCcurl.C:344-376`):
@@ -370,13 +402,24 @@ psi_p  <- psi_p + mixExtent * (psi_bar - psi_p),   psi in { hA, T, Y }
 
 ### Built-in diagnostics
 
-`buildParticleList()` ends with a diagnostics block (`secondCondMMCcurl.C:167-274`) that
-reduces across processors and reports: the global flagged-particle count, the number of
-pairs and triples, and a **split-axis histogram** — how often each of the four axes won a
-split. That histogram is the direct check on whether `phiMod_m` is tight enough for φ° to
-dominate. The same numbers are appended as a tab-separated row to
+`buildParticleList()` ends with a diagnostics block that reduces across processors and
+reports: the global flagged-particle count, the number of pairs and triples, a
+**split-axis histogram** over all seven candidate axes (`x`, `y`, `z`, `phiModified`,
+`xi_x`, `xi_y`, `xi_z`), and the realised **φ° range**. The histogram is the direct check
+on the balance between conditioning and locality — φ° winning most *reference* splits while
+`x`/`y`/`z` still take a healthy share is the target. The φ° range matters because φ° is
+**not** bounded by 1 even though φ is, which interacts with the coupling's `fHigh` gate.
+The same numbers are appended as a tab-separated row to
 `<case>/postProcessing/secondCondMMCcurl.log` by the master process, with a header on
 first write.
+
+`MixingPopeCloud::updatePhi` additionally reports the weighted mean `|φ − c|` each step —
+the direct measure of whether φ is tracking the resolved progress variable or drifting away
+from it:
+
+```
+    [secondCond] mean |phi - c| = 0.0182 (tauC = 0.0005 s, relax = 0.632)
+```
 
 ---
 
@@ -565,12 +608,17 @@ secondConditioning
 {
     enabled     true;    // default false — gates model construction
     R           0.2;     // default 0.0 — subset fraction, Bernoulli per particle
-    beta        1.0;     // default 1.0 — phi_deg = phi*exp(beta*omega); 0 disables it
+    beta        0.15;    // default 1.0 — phi_deg = phi*exp(beta*omega); 0 disables it.
+                         //   NB exp(N(0,1)) spans ~27x at 5-95%, so beta = 1 swamps
+                         //   the physical content of phi. Keep it small.
     tauOU       1.0e-3;  // default 1.0  [s] — OU correlation time; <= SMALL skips step 4
-    Tu          300.0;   // default 300  [K] — unburnt reference for phi init
-    Tb          2000.0;  // default 2000 [K] — burnt reference for phi init
-    A_phi       500.0;   // default 0.0  — W(phi) pre-factor; <= SMALL skips step 3
-    Z_phi       6.0;     // default 0.0  — W(phi) exponent
+    tauC        5.0e-4;  // default 0.0  [s] — relaxation time of phi towards the
+                         //   Eulerian c. 0 = phi is a pure interpolation of c
+                         //   (level-1 phi mixing then does not accumulate);
+                         //   large = phi free-running.
+    Tu          300.0;   // default 300  [K] — unburnt reference for c and phi init
+    Tb          2000.0;  // default 2000 [K] — burnt reference for c and phi init
+    // A_phi / Z_phi have been REMOVED; setting either is now a FatalError
 }
 
 subModels
@@ -594,7 +642,7 @@ subModels
 
     secondCondMMCcurlCoeffs
     {
-        r_i     1e-3;        // required by the base ctor; not a k-d split axis
+        r_i     1e-3;        // LIVE: physical-locality normaliser for the k-d split
 
         Xim_i                // EXACTLY 4 entries, in this order
         {
@@ -605,8 +653,7 @@ subModels
         }
 
         pairingMethod   local;   // only local pairing is implemented
-        CL              0.5;     // read + printed, but UNUSED by mixpair()
-        CE              0.1;
+        CE              0.1;      // the only timescale coefficient that is used
         meanTimeScale   true;
     }
 
@@ -614,7 +661,10 @@ subModels
     {
         fm          0.03;    // conditioning-axis normaliser; sets kernel width h = fm/4
         fLow        0.015;   // below -> cell skipped (also filters the -1 sentinel)
-        fHigh       0.985;   // above -> cell skipped
+        fHigh       0.985;   // above -> cell skipped. RAISE THIS when condVariable is
+                     //   phiModified: phi_deg = phi*exp(beta*omega) is not
+                     //   bounded by 1, so cells above fHigh lose their coupling
+                     //   source entirely (Indicator = 0)
         nNearest    20;      // default 20 — k for the k-NN kernel
         rMax        1.0e9;   // default 1e9 — cap on the physical kernel radius
         dfMax       0.015;   // cap on the extrapolation stride in f
@@ -666,27 +716,28 @@ modification.
 
 ### Silent defaults
 
-- **`A_phi` defaults to 0**, and `updatePhiReaction()` returns immediately when it is
-  `<= SMALL` (`MixingPopeCloud.C:315-316`). Omit the key and φ is frozen at its injection
-  value; φ° then varies through ω alone. Likewise `tauOU <= SMALL` skips the OU advance
-  entirely (`MixingPopeCloud.C:344-345`).
-- **φ is never re-derived from T.** It is initialised from temperature at injection and
-  thereafter evolves only by level-1 mixing and *W*(φ). Chemistry changes `T` but not
-  `phi`, so the two drift apart by design.
-- **The split-axis fallback is physical *x*.** In `KkdTreeLikeSearch`, `ncond` starts at 0
-  and is only reassigned when some normalised extent beats `disMax = 0`
-  (`mixParticleModel.C:934-969`). If every reference axis has zero extent in a node,
+- **`tauC` defaults to 0**, which is the pure-interpolation limit: φ is set equal to `c` at
+  the particle every step, so level-1 φ-mixing does not accumulate across timesteps. The
+  cloud warns when the key is absent. `tauOU <= SMALL` still skips the OU advance entirely.
+- **φ is anchored to `c`, not to the particle's own T.** Chemistry changes the particle `T`
+  but not `phi`; φ tracks the *resolved* progress variable instead. The reported mean
+  `|φ − c|` is the check that this is working.
+- **`c` must be registered and updated by the solver.** `updatePhi` looks `c` up from the
+  mesh registry and issues a `FatalError` if it is absent. A solver that enables second
+  conditioning without creating and updating `c` will not run.
+- **The split-axis fallback is physical *x*.** `ncond` starts at 0 and is only reassigned
+  when some normalised extent beats `disMax = 0`. If every axis has zero extent in a node,
   `lessArg(0)` sorts on `position().x()`.
-- **`CL` is dead in the second level** — read, stored, printed, never used by `mixpair()`.
-  Only `CE` enters the timescale.
+- **`CL` is dead in the second level** — read and printed for dictionary compatibility with
+  `MMCcurl`, never used by `mixpair()`. Only `CE` enters the timescale; the model now warns
+  if `CL` is set away from its default.
 
 ### Structural limits
 
 - **No parallel pairing at level 2.** `secondCondMMCcurl::buildParticleList()` always calls
-  `findPairs()` directly, never `correctParticleListParallel()`
-  (`secondCondMMCcurl.C:165`). With a small `R` on many processors, per-rank flagged counts
-  can fall low enough that pairing quality degrades — the diagnostics line reports exactly
-  this.
+  `findPairsSC()` directly, never `correctParticleListParallel()`. With a small `R` on many
+  processors, per-rank flagged counts can fall low enough that pairing quality degrades —
+  the diagnostics line reports exactly this.
 - **`magSqrRefVar` is zeroed** (`secondCondMMCcurl.C:149`), so the Cleary & Klimenko
   timescale branch that `MMCcurl` offers via `aISO false` has no data to work from at
   level 2; only aISO is available.
@@ -699,10 +750,16 @@ modification.
   registered coupling variable's slot holds φ° rather than its own value in both the
   particle and cell records (`KernelEstimation.C:69-72, 210-219`). Anything else reading
   that slot from these lists reads φ°.
+- **φ° is unbounded above, `fHigh` assumes it is not.** `φ° = φ·exp(βω)` exceeds 1 for
+  roughly half the flagged particles, but `computeTargets` skips every cell outside
+  `[fLow, fHigh]`, leaving `Indicator = 0` and no coupling source there. The constructor now
+  warns when `condVariable phiModified` is combined with `fHigh <= 1`; cross-check the
+  `KernelEstimation coupling: N/M cells covered` line against the φ° range that
+  `secondCondMMCcurl` reports.
 
 ### Hard-coded in the solver
 
-`SPFoam.C:78-98` fixes the laminar flame speed and thickness used by the `vb` correlation
+`SPFoam.C` fixes the laminar flame speed and thickness used by the `vb` correlation
 to a single commented-out block of case-specific constants (`fixedsl0_`, `fixeddeltal0_`,
 currently the "DC-Aachen adjusted" pair), assigned uniformly to `dynsl0` and `dyndeltal0`
 before the time loop. Since `vb` scales the mixing timescale at *both* levels, these two

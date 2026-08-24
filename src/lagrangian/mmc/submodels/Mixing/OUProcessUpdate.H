@@ -48,7 +48,14 @@ Description
     Note: beta (cloud.secondCondBeta()) is NOT used here.  It enters only
     when computing the modified conditioning variable
         φ° = φ · exp(β · ω_OU)
-    which is handled in a separate step once the base scalar φ is defined.
+    which is handled in MixingPopeCloud::updateOUProcess(), immediately after
+    MixingPopeCloud::updatePhi() has relaxed φ towards the Eulerian progress
+    variable.
+
+    Beware that exp(β·ω) with ω ~ N(0,1) has mean exp(β²/2) > 1, so φ° is
+    biased high relative to φ, and its spread grows quickly with β: at β = 1
+    the 5–95% range of the multiplier already spans a factor of ~27, which is
+    large enough to swamp the physical content of φ.
  
 SourceFiles
     -  (header-only, all functions inline)

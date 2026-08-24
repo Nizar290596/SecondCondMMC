@@ -86,6 +86,13 @@ inline Foam::scalar Foam::MixingPopeCloud<CloudType>::secondCondTauOU() const
 }
  
 template<class CloudType>
+inline Foam::scalar Foam::MixingPopeCloud<CloudType>::secondCondTauC() const
+{
+    return secondCondTauC_;
+}
+
+
+template<class CloudType>
 inline Foam::scalar Foam::MixingPopeCloud<CloudType>::secondCondTu() const
 {
     return secondCondTu_;
@@ -97,20 +104,14 @@ inline Foam::scalar Foam::MixingPopeCloud<CloudType>::secondCondTb() const
 {
     return secondCondTb_;
 }
- 
- 
+
+
 template<class CloudType>
-inline Foam::scalar Foam::MixingPopeCloud<CloudType>::secondCondAPhi() const
+inline Foam::scalar Foam::MixingPopeCloud<CloudType>::phiDeviation() const
 {
-    return secondCondAPhi_;
+    return phiDeviation_;
 }
  
- 
-template<class CloudType>
-inline Foam::scalar Foam::MixingPopeCloud<CloudType>::secondCondZPhi() const
-{
-    return secondCondZPhi_;
-}
  
 // ************************************************************************* //
 

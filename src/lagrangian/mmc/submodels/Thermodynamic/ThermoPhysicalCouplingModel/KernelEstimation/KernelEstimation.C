@@ -779,8 +779,31 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
     condSlotXi_  = this->XiC().cVarInXi()[condName];
 
     if (phiModEnabled_)
+    {
         Info<< "KernelEstimation: conditioning on phiModified (phi-degree), "
             << "carrier coupling slot '" << condName << "'" << endl;
+
+        // phi_deg = phi*exp(beta*omega) is unbounded above even though phi is
+        // clamped to [0,1]: omega ~ N(0,1), so exp(beta*omega) exceeds 1 for
+        // half the particles. fLow/fHigh are normally calibrated for a mixture
+        // fraction in [0,1], and computeTargets() skips every cell whose
+        // conditioning value falls outside them -- leaving Indicator = 0 and
+        // switching the relaxation source off there. Warn rather than silently
+        // adjusting fHigh, and point at the coverage diagnostic.
+        if (fHigh_ <= 1.0)
+        {
+            WarningInFunction
+                << "condVariable is 'phiModified' but fHigh = " << fHigh_
+                << " is calibrated for a variable bounded by 1." << nl
+                << "phiModified = phi*exp(beta*omegaOU) is NOT bounded above, "
+                << "so cells above fHigh will be dropped from the coupling "
+                << "(Indicator = 0)." << nl
+                << "Check the 'KernelEstimation coupling: N/M cells covered' "
+                << "line and the phiModified range reported by "
+                << "secondCondMMCcurl, and raise fHigh accordingly."
+                << endl;
+        }
+    }
 }
 
 

@@ -35,38 +35,62 @@ Description
         (phi_modified, xi_x, xi_y, xi_z)
  
     where
-      - phi_modified = phiModified (modified progress variable, already
-                       computed from the OU process at each timestep)
+      - phi_modified = phiModified = phi*exp(beta*omegaOU), the modified
+                       progress variable recomputed each timestep by
+                       MixingPopeCloud::updateOUProcess()
       - xi = shadow positions stored in the particle's existing XiR() field
              as XiR()[0], XiR()[1], XiR()[2]
- 
-    The k-d tree splitting uses the normalisation factors from the inherited
-    Xii_ list (read from the Xim_i subdictionary — must have exactly 4
-    entries corresponding to phiMod_m, sPx_m, sPy_m, sPz_m).  A tight
-    normalisation for phi_modified (e.g. 0.01) causes the tree to split
-    preferentially on the progress-variable axis; looser normalisations for
-    the shadow-position coordinates (e.g. 0.05) provide spatial context with
-    lower priority.  Physical coordinates are NOT used as split dimensions
-    (the ncond = 3 + i offset in KkdTreeLikeSearch ensures this).
- 
-    The aISO timescale is computed identically to MMCcurl.  Only Y, T, and
-    hA are mixed between the paired particles; phi, XiR, XiC, and
-    secondCondFlag are NOT mixed.
- 
+
+    phi itself is a particle-carried scalar that is mixed pairwise by the
+    first-conditioning model and relaxed towards the Eulerian progress
+    variable c by MixingPopeCloud::updatePhi() over a timescale tauC, so it
+    stays anchored to the resolved solution instead of free-running.
+
+    Pairing uses a k-d tree search local to this class (findPairsSC /
+    kdTreeSearchSC) in which the three PHYSICAL coordinates, normalised by
+    r_i, compete with the four reference-space axes, normalised by the Xim_i
+    entries.  This mirrors premixedMixParticleModel rather than the inherited
+    mixParticleModel::KkdTreeLikeSearch, whose physical-space branches are
+    commented out.
+
+    That distinction matters.  In MMCcurl the reference variables ARE the
+    shadow positions, so they supply locality of mixing themselves.  Here the
+    reference space mixes phi_modified against the shadow positions, so if a
+    tight phiMod_m makes phi_modified dominant there is nothing left to keep
+    pairs local in physical space, and the model degenerates into mixing
+    composition between particles at opposite ends of the domain.  Keeping the
+    physical axes in contention means phiMod_m can be tightened to give the
+    progress variable more weight WITHOUT sacrificing locality.
+
+    Because the normalisers divide, a SMALLER value makes an axis MORE likely
+    to be chosen as the split dimension.
+
+    The aISO timescale is computed identically to MMCcurl (from CE only; CL is
+    accepted for dictionary compatibility but unused).  Only Y, T, and hA are
+    mixed between the paired particles; phi, XiR, XiC, and secondCondFlag are
+    NOT mixed.
+
     Parallel pairing is not implemented; local pairing only.
- 
+
+    Diagnostics are written to <case>/postProcessing/secondCondMMCcurl.log:
+    flagged-particle counts, pair/triple counts, the split-axis histogram over
+    all seven candidate axes, and the realised phiModified range.  Note that
+    phiModified is NOT bounded by 1 even though phi is, which matters when the
+    thermophysical coupling conditions on it (see KernelEstimation's fHigh).
+
     Usage in cloudProperties:
     \verbatim
     mixingModel    secondCondMMCcurl;
- 
+
     secondCondMMCcurlCoeffs
     {
-        // Base class: position-space normalisation (unused for k-d splitting
-        // but required by the constructor)
+        // Physical-space normalisation. Live: it sets how strongly the k-d
+        // tree insists on locality of mixing against the reference axes.
         r_i     1e-3;
- 
+
         // 4-entry normalisation for the (phiModified, xi_x, xi_y, xi_z)
-        // reference space.  Tight phiMod_m dominates the k-d tree splitting.
+        // reference space.  Tight phiMod_m gives the progress variable more
+        // weight in the splitting.
         Xim_i
         {
             phiMod_m    0.01;
@@ -74,16 +98,15 @@ Description
             sPy_m       0.05;
             sPz_m       0.05;
         }
- 
+
         pairingMethod   local;
- 
-        // aISO timescale coefficients (same meaning as MMCcurl)
-        CL              0.5;
+
+        // aISO timescale coefficients
         CE              0.1;
         meanTimeScale   true;
     }
     \endverbatim
- 
+
 \*---------------------------------------------------------------------------*/
  
 #ifndef secondCondMMCcurl_H
@@ -131,6 +154,43 @@ class secondCondMMCcurl
             particleType& q,
             scalar mixExtent
         );
+
+        //- Pair the flagged particles using a k-d tree search in which the
+        //  three PHYSICAL coordinates compete against the four reference-space
+        //  axes for the split.
+        //
+        //  The shared mixParticleModel::findPairs()/KkdTreeLikeSearch() has its
+        //  physical-space branches commented out, so only XiR axes are split
+        //  candidates. That is correct for MMCcurl, where the reference
+        //  variables ARE the shadow positions and therefore supply locality
+        //  themselves. It is not correct here: the second-conditioning space
+        //  mixes phi_deg against the shadow positions, so any normalisation
+        //  that makes phi_deg dominant removes the only locality mechanism and
+        //  the model starts pairing particles that are arbitrarily far apart
+        //  in physical space.
+        //
+        //  These two routines mirror premixedMixParticleModel, which keeps
+        //  disX/disY/disZ (normalised by r_i) as ncond 0,1,2 alongside the
+        //  reference variables at ncond = 3+i. With them, tightening phiMod_m
+        //  raises the weight given to phi_deg WITHOUT ever sacrificing
+        //  physical locality, and r_i in secondCondMMCcurlCoeffs becomes live.
+        //
+        //  The shared base implementation is left untouched.
+        void findPairsSC
+        (
+            const DynamicList<eulerianFieldData>& eulerianFieldList,
+            DynamicList<List<label>>& pairs
+        ) const;
+
+        void kdTreeSearchSC
+        (
+            const DynamicList<eulerianFieldData>& particleList,
+            label l,
+            label u,
+            std::vector<label>& pInd,
+            std::vector<label>& L,
+            std::vector<label>& U
+        ) const;
  
  
 protected:

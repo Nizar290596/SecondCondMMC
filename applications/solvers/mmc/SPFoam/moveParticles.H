@@ -7,13 +7,20 @@
 | Timestep sequence                                                           |
 |   1. inflowBoundary().inflow()          particle injection                  |
 |   2. mixing().Smix()                    first conditioning (all particles)  |
-|   3. updatePhiReaction(Δt)              W(φ) source  (all particles)        |  <- guarded
+|                                         mixes ONLY φ                        |
+|   3. updatePhi(Δt)                      relax φ → c_LES  (all particles)    |  <- guarded
 |   4. updateOUProcess(Δt)               OU advance + φ° update (subset)     |  <- guarded
 |   5. secondCondMixing().Smix()          second conditioning (subset)        |  <- guarded
+|                                         mixes Y, T, hA                      |
 |   6. solve()                            Lagrangian transport + chemistry     |
 |   7. Sreact()                           load-balanced chemistry              |
 |                                                                             |
 | Steps 3–5 are only executed when secondCondMixingEnabled() is true.        |
+|                                                                             |
+| The order is load-bearing: φ is mixed first, the mixed φ is then relaxed    |
+| towards the Eulerian progress variable, and only then is it modified into   |
+| φ° -- which step 5 uses as the dominant k-d tree split axis. A stale φ°     |
+| would sort particles into the wrong bins.                                   |
 \*---------------------------------------------------------------------------*/
 
 if(pdfMethodOn)
@@ -41,26 +48,26 @@ if(pdfMethodOn)
 	// Steps 3–5: second-conditioning block.
         // secondCondEnabled is true when the secondConditioning sub-dictionary
         // is present, enabled = true, and the model pointer was constructed.
-        // updatePhiReaction (step 3) applies to ALL particles — φ is a
+        // updatePhi (step 3) applies to ALL particles — φ is a
         // first-level quantity — but it only exists when second conditioning
         // is part of the setup, so it shares the same guard as steps 4 and 5.
         // When second conditioning is off the solver goes directly to step 6,
         // identical to the original baseline solver.
         const bool secondCondEnabled = pSets[pSi].secondCondMixingEnabled();
- 
+
         if (secondCondEnabled)
         {
             const scalar deltaT = runTime.deltaTValue();
- 
-            // 3. W(φ) reaction — all particles, after Smix() has completed
+
+            // 3. Relax φ towards the Eulerian progress variable c interpolated
+            //    at the particle — all particles, after Smix() has completed
             //    for the whole cloud so φ values are post-mixing
-            pSets[pSi].updatePhiReaction(deltaT);
- 
+            pSets[pSi].updatePhi(deltaT);
+
             // 4. Advance ω_OU and recompute φ° — flagged particles only,
-            //    after reaction so φ° reflects the reacted φ
+            //    after the relaxation so φ° reflects the anchored φ
             pSets[pSi].updateOUProcess(deltaT);
- 
-        Info << "\tFinish mixing in " << t1mix - t0mix<< "s" <<endl;
+
             // 5. Second-conditioning mixing — uses updated φ° values
             //    (stored as eulerianFieldData.XiR()[0] in buildParticleList)
             const scalar t0sc = runTime.elapsedCpuTime();

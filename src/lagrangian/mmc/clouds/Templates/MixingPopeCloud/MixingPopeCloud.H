@@ -112,17 +112,21 @@ class MixingPopeCloud
             //- OU process relaxation time τ_OU [s]
             scalar secondCondTauOU_;
 
+            //- Relaxation time τ_c of φ towards the Eulerian progress
+            //  variable c [s]. τ_c → 0 makes φ a pure interpolation of c;
+            //  τ_c → ∞ makes φ free-running.
+            scalar secondCondTauC_;
+
 	    //- Unburnt mixture temperature Tu [K]
             scalar secondCondTu_;
- 
+
             //- Burnt mixture temperature Tb [K]
             scalar secondCondTb_;
- 
-            //- Pre-exponential coefficient in the progress-variable reaction term
-            scalar secondCondAPhi_;
- 
-            //- Activation parameter in the progress-variable reaction term
-            scalar secondCondZPhi_;
+
+            //- Diagnostic: weighted mean |φ − c| over the cloud after the most
+            //  recent updatePhi() call. A value that grows with time means φ is
+            //  drifting away from the resolved progress variable.
+            scalar phiDeviation_;
 
     // Protected Member Functions
 
@@ -202,27 +206,38 @@ class MixingPopeCloud
         //- OU relaxation time τ_OU [s]
         inline scalar secondCondTauOU() const;
 
+        //- Relaxation time τ_c of φ towards the Eulerian c [s]
+        inline scalar secondCondTauC() const;
+
 	//- Unburnt temperature Tu [K]
         inline scalar secondCondTu() const;
- 
+
         //- Burnt temperature Tb [K]
         inline scalar secondCondTb() const;
- 
-        //- Pre-exponential reaction coefficient A_phi
-        inline scalar secondCondAPhi() const;
- 
-        //- Activation parameter Z_phi
-        inline scalar secondCondZPhi() const;
+
+        //- Weighted mean |φ − c| from the most recent updatePhi()
+        inline scalar phiDeviation() const;
 
     // Second-conditioning cloud-level operations
     // (called from moveParticles.H in the correct timestep sequence)
- 
-        //- Apply W(φ) = A·(1−φ)·exp[Z·(φ−1)] to ALL particles for one Δt.
-        //  Must be called after mixing().Smix() and before updateOUProcess().
-        void updatePhiReaction(scalar deltaT);
- 
+
+        //- Relax φ of ALL particles towards the Eulerian progress variable c
+        //  interpolated at the particle position, over one Δt:
+        //
+        //      φ ← φ + (1 − exp(−Δt/τ_c))·(c_p − φ),   clamped to [0,1]
+        //
+        //  The update is exact for a constant c_p and therefore independent of
+        //  Δt. It replaces the former W(φ) = A·(1−φ)·exp[Z·(φ−1)] source, which
+        //  was non-negative for every φ ≤ 1 and so drove every particle in the
+        //  domain monotonically to φ = 1 regardless of whether it was burning,
+        //  leaving φ a function of residence time rather than of reaction.
+        //
+        //  Must be called after mixing().Smix() — so it acts on the mixed φ —
+        //  and before updateOUProcess().
+        void updatePhi(scalar deltaT);
+
         //- Advance ω_OU and recompute φ° = φ·exp(β·ω_OU) for flagged particles.
-        //  Must be called after updatePhiReaction() and before secondCondMixing().Smix().
+        //  Must be called after updatePhi() and before secondCondMixing().Smix().
         void updateOUProcess(scalar deltaT);
 
     // I-O

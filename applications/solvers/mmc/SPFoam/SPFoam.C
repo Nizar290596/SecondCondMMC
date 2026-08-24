@@ -165,6 +165,27 @@ int main(int argc, char *argv[])
 
         gradRho = fvc::grad(rho*DEff);
 
+        // Update the Eulerian progress variable that anchors the particle phi
+        // of the second-conditioning extension. Must be done after
+        // thermo.correct() (inside hYEqvE_Eqn.H) and before moveParticles.H,
+        // so the particles relax towards the progress variable of the
+        // Eulerian solution they have just produced.
+        if (pdfMethodOn)
+        {
+            const scalar Tu = pSets.first().secondCondTu();
+            const scalar Tb = pSets.first().secondCondTb();
+
+            if (Tb - Tu > SMALL)
+            {
+                c = (thermo.T() - dimensionedScalar("Tu", dimTemperature, Tu))
+                  / dimensionedScalar("dT", dimTemperature, Tb - Tu);
+
+                c.max(0.0);
+                c.min(1.0);
+                c.correctBoundaryConditions();
+            }
+        }
+
         Info << "ExecutionTime = " << runTime.elapsedCpuTime() << " s" << endl;
 
         #include "moveParticles.H"
