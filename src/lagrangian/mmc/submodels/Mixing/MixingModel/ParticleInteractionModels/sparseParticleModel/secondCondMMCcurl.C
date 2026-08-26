@@ -29,10 +29,6 @@ License
 
 #include "OSspecific.H"
 #include <fstream>
-#include <algorithm>
-#include <iterator>
-#include <numeric>
-#include <vector>
  
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
  
@@ -166,10 +162,10 @@ void Foam::secondCondMMCcurl<CloudType>::buildParticleList()
  
     // Pair the flagged particles locally (no parallel exchange for second
     // conditioning — consistent with the local-pairing-only design note).
-    // findPairsSC() is used instead of the inherited findPairs() so that the
-    // physical coordinates compete against phi_deg for the k-d split; see the
-    // comment on the declaration in secondCondMMCcurl.H.
-    this->findPairsSC(this->eulerianFieldDataList_, this->particlePairs_);
+    // The inherited findPairs()/KkdTreeLikeSearch() splits over the four
+    // reference axes ONLY: its physical-space branches are disabled, so the
+    // physical coordinates never enter the pairing and r_i plays no part.
+    this->findPairs(this->eulerianFieldDataList_, this->particlePairs_);
 
     // -- Diagnostics ---------------------------------------------------------
     // Particle counts: per-process and global flagged-particle totals,
@@ -248,16 +244,12 @@ void Foam::secondCondMMCcurl<CloudType>::buildParticleList()
 
         forAll(hist, i)
         {
-            // Slots 0-2 are the physical coordinates, 3+ the reference axes
             const word axisName =
-                (i == 0) ? word("x")
-              : (i == 1) ? word("y")
-              : (i == 2) ? word("z")
-              : (i == 3) ? word("phiModified")
-              : (i == 4) ? word("xi_x")
-              : (i == 5) ? word("xi_y")
-              : (i == 6) ? word("xi_z")
-              :            word("XiR[" + Foam::name(i - 3) + "]");
+                (i == 0) ? word("phiModified")
+              : (i == 1) ? word("xi_x")
+              : (i == 2) ? word("xi_y")
+              : (i == 3) ? word("xi_z")
+              :            word("XiR[" + Foam::name(i) + "]");
 
             const scalar pct =
                 (totalSplits > 0)
@@ -297,7 +289,7 @@ void Foam::secondCondMMCcurl<CloudType>::buildParticleList()
                 if (writeHeader)
                 {
                     os << "# time\tnFlagged\tnPairs\tnTriples"
-                       << "\tx\ty\tz\tphiMod\txi_x\txi_y\txi_z"
+                       << "\tphiMod\txi_x\txi_y\txi_z"
                        << "\ttotalSplits"
                        << "\tphiModMin\tphiModMean\tphiModMax\n";
                 }
@@ -319,189 +311,6 @@ void Foam::secondCondMMCcurl<CloudType>::buildParticleList()
 }
  
  
-template<class CloudType>
-void Foam::secondCondMMCcurl<CloudType>::findPairsSC
-(
-    const DynamicList<eulerianFieldData>& eulerianFieldList,
-    DynamicList<List<label>>& pairs
-) const
-{
-    pairs.clear();
-
-    // Histogram has 3 physical slots followed by one per reference axis, so
-    // index i corresponds directly to the ncond value chosen at that split.
-    this->splitAxisHistogram_.setSize(3 + this->Xii_.size());
-    this->splitAxisHistogram_ = 0;
-
-    std::vector<label> L;
-    std::vector<label> U;
-    L.reserve(eulerianFieldList.size());
-    U.reserve(eulerianFieldList.size());
-
-    std::vector<label> pInd(eulerianFieldList.size());
-    std::iota(pInd.begin(), pInd.end(), 0);
-
-    kdTreeSearchSC(eulerianFieldList, 1, eulerianFieldList.size(), pInd, L, U);
-
-    pairs.reserve(ceil(0.5*eulerianFieldList.size()));
-
-    for (size_t i = 0; i < L.size(); i++)
-    {
-        const label p = L[i] - 1;
-        const label q = L[i];
-
-        if (U[i] - L[i] < 2)
-        {
-            List<label> pair(2);
-            pair[0] = pInd[p];
-            pair[1] = pInd[q];
-
-            pairs.append(std::move(pair));
-        }
-        else if (U[i] - L[i] == 2)
-        {
-            const label r = L[i] + 1;
-
-            List<label> pair(3);
-            pair[0] = pInd[p];
-            pair[1] = pInd[q];
-            pair[2] = pInd[r];
-
-            pairs.append(std::move(pair));
-        }
-    }
-}
-
-
-template<class CloudType>
-void Foam::secondCondMMCcurl<CloudType>::kdTreeSearchSC
-(
-    const DynamicList<eulerianFieldData>& particleList,
-    label l,
-    label u,
-    std::vector<label>& pInd,
-    std::vector<label>& L,
-    std::vector<label>& U
-) const
-{
-    //- Break the division if the particle list has length less than 2
-    if (u - l <= 2)
-    {
-        //- Divide particles into groups of two or three
-        L.push_back(l);
-        U.push_back(u);
-
-        return;
-    }
-
-    label m = (l + u)/2;
-    if ((u - m) % 2 != 0) m++;
-
-    auto iterL = pInd.begin();
-    auto iterU = pInd.begin();
-
-    std::advance(iterL, l-1);
-    std::advance(iterU, u  );
-
-    scalar maxInX = -GREAT;
-    scalar maxInY = -GREAT;
-    scalar maxInZ = -GREAT;
-
-    scalar minInX = GREAT;
-    scalar minInY = GREAT;
-    scalar minInZ = GREAT;
-
-    List<scalar> maxInXiR(this->Xii_.size(), -GREAT);
-    List<scalar> minInXiR(this->Xii_.size(),  GREAT);
-
-    // Find minimum and maximum for each coordinate
-    for (auto it = iterL; it != iterU; it++)
-    {
-        const auto& pos = particleList[*it].position();
-
-        maxInX = std::max(maxInX, pos.x());
-        maxInY = std::max(maxInY, pos.y());
-        maxInZ = std::max(maxInZ, pos.z());
-
-        minInX = std::min(minInX, pos.x());
-        minInY = std::min(minInY, pos.y());
-        minInZ = std::min(minInZ, pos.z());
-
-        forAll(this->Xii_, i)
-        {
-            maxInXiR[i] = std::max(maxInXiR[i], particleList[*it].XiR()[i]);
-            minInXiR[i] = std::min(minInXiR[i], particleList[*it].XiR()[i]);
-        }
-    }
-
-    //- Scaled/stretched distances between max and min in each direction.
-    //  The physical extents are normalised by r_i and the reference-space
-    //  extents by Xii_[i]; the widest normalised extent wins the split. Since
-    //  the normalisers DIVIDE, a smaller Xim_i entry makes that axis more
-    //  likely to be chosen -- so tightening phiMod_m increases the weight of
-    //  phi_deg, while r_i keeps the physical axes in contention and preserves
-    //  locality of mixing.
-    scalar disMax = 0;
-    label ncond = 0;
-
-    const scalar disX = (maxInX - minInX)/this->ri_;
-    if (disX > disMax)
-    {
-        disMax = disX;
-        ncond = 0;
-    }
-
-    const scalar disY = (maxInY - minInY)/this->ri_;
-    if (disY > disMax)
-    {
-        disMax = disY;
-        ncond = 1;
-    }
-
-    const scalar disZ = (maxInZ - minInZ)/this->ri_;
-    if (disZ > disMax)
-    {
-        disMax = disZ;
-        ncond = 2;
-    }
-
-    forAll(this->Xii_, i)
-    {
-        const scalar disXiR = mag(maxInXiR[i] - minInXiR[i])/this->Xii_[i];
-
-        if (disXiR > disMax)
-        {
-            disMax = disXiR;
-            ncond = 3 + i;
-        }
-    }
-
-    // Tally which axis won this split for the diagnostic histogram
-    if (ncond < this->splitAxisHistogram_.size())
-    {
-        this->splitAxisHistogram_[ncond]++;
-    }
-
-    // lessArg dispatches ncond < 3 to position()[ncond] and ncond >= 3 to
-    // XiR()[ncond-3], so it needs no modification.
-    typename mixParticleModel<CloudType>::lessArg comp(ncond);
-
-    std::sort
-    (
-        iterL,
-        iterU,
-        [&](label& A, label& B) -> bool
-        {
-            return comp(particleList[A], particleList[B]);
-        }
-    );
-
-    //- Recursive calls for the lower and upper branches of the particle list
-    kdTreeSearchSC(particleList, l,   m, pInd, L, U);
-    kdTreeSearchSC(particleList, m+1, u, pInd, L, U);
-}
-
-
 template<class CloudType>
 void Foam::secondCondMMCcurl<CloudType>::mixpair
 (
@@ -634,8 +443,8 @@ void Foam::secondCondMMCcurl<CloudType>::printInfo()
     Info<< "Mixing Model: " << this->modelType() << nl
         << token::TAB << "Reference space: (phiModified, xi_x, xi_y, xi_z)" << nl
         << token::TAB << "Particle filter: secondCondFlag == 1 only" << nl
-        << token::TAB << "k-d tree:        x,y,z (/r_i) compete with XiR (/Xim_i)" << nl
-        << token::TAB << "r_i:             " << this->ri_    << nl
+        << token::TAB << "k-d tree:        splits on XiR only (ncond = 3+i);" << nl
+        << token::TAB << "                 physical coordinates are NOT split axes" << nl
         << token::TAB << "Xim_i:           " << this->Xii_   << nl
         << token::TAB << "Timescale:       aISO" << nl
         << token::TAB << "CE:              " << CE_           << nl

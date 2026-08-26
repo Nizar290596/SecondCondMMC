@@ -320,57 +320,43 @@ of every reference axis, normalises it, and splits on whichever is largest
 (`mixParticleModel.C:906-986`):
 
 ```
-physical axes   :  ( max - min ) / r_i          -> ncond = 0, 1, 2
-reference axes  :  ( max - min ) / Xii_i        -> ncond = 3 + i
-split axis      :  whichever normalised extent is largest
+split axis   i* = argmax_i ( max_i - min_i ) / Xii_i
+ncond = 3 + i*
 ```
+
+The `3 +` offset points `lessArg` past the three physical coordinates
+(`mixParticleModel.H:167-186`), so **physical position is never a split axis** — the
+physical-space branches are commented out (`mixParticleModel.C:937-956`). Both levels use
+this same inherited search, so both condition on their reference variables alone. A
+consequence worth noting: `r_i` is a mandatory dictionary entry (the base constructor reads
+it) but takes no part in pairing under `pairingMethod local`.
 
 Because the normalisers *divide*, a **small** value makes an axis **more** likely to be
 chosen — so tightening `phiMod_m` gives φ° more weight.
 
-The two levels use **different searches**. `MMCcurl` uses the inherited
-`mixParticleModel::KkdTreeLikeSearch`, whose physical-space branches are commented out
-(`mixParticleModel.C:937-956`): only `XiR` axes are candidates. That is correct there,
-because its reference variables *are* the shadow positions and so supply locality
-themselves.
+The subtlety that matters in practice is that the tree compares **root extents, not local
+gradients**. At the top node the shadow axes span the whole cloud while φ° spans its own
+order-unity range:
 
-`secondCondMMCcurl` uses its own `findPairsSC` / `kdTreeSearchSC`, mirroring
-`premixedMixParticleModel::premixedkdTreeLikeSearch`, in which the physical coordinates
-compete against the reference axes. Without that, any `phiMod_m` tight enough to make φ°
-dominant would remove the only locality mechanism in the level-2 space and the model would
-start mixing composition between particles at opposite ends of the domain. The shared base
-implementation is left untouched. `lessArg` (`mixParticleModel.H:167-186`) already
-dispatches `ncond < 3` to `position()[ncond]` and `ncond >= 3` to `XiR()[ncond-3]`, so it
-needed no change.
-
-Recursion stops when a group holds two or three particles; those become the pairs and
-triples that `SmixList()` dispatches — a triple is mixed as two overlapping pairs, (1,2)
-then (2,3) (`mixParticleModel.C:755-778`).
-
-```mermaid
-flowchart LR
-    subgraph L1 ["Level 1 — MMCcurl (ALL particles)"]
-        A1["k-d splits alternate between<br/>ξx, ξy, ξz — comparable normalisers"]
-        A2["pairs are neighbours in<br/>shadow-position space"]
-        A3["mixes φ only"]
-        A1 --> A2 --> A3
-    end
-    subgraph L2 ["Level 2 — secondCondMMCcurl (FLAGGED subset)"]
-        B1["phiMod_m ≪ sP*_m<br/>→ φ° wins nearly every split"]
-        B2["pairs are close in φ°,<br/>may be far apart in space"]
-        B3["mixes Y, T, hA"]
-        B1 --> B2 --> B3
-    end
+```
+shadow axis :  L_cloud / sP_m        e.g. 0.05 / 4.2e-5  ~ 1200
+phi-degree  :  range(phi_deg) / phiMod_m   e.g. 1.24 / 0.1 = 12.4
 ```
 
-> **Why the constructor rewrites `Xii_`**
->
-> The base class sizes `Xii_` from the first-conditioning names, giving three entries and
-> no normaliser for φ°. `secondCondMMCcurl` therefore resizes it to four and reads four
-> explicit keys — `phiMod_m`, `sPx_m`, `sPy_m`, `sPz_m` — in **both** the dictionary and
-> the copy constructor, because the base copy constructor re-runs `getXiNormalisation()`
-> and would otherwise hand a cloned model the three-entry list
-> (`secondCondMMCcurl.C:51-91`).
+The tree then spends its entire depth budget (`D ~ log2(N_rank/2.5)`) cutting the three
+shadow axes down, and φ° is never the widest axis at any level. With three shadow axes
+against one φ° axis, **equal root normalised extents give φ° about a quarter of the
+splits**, which is the sensible target.
+
+This is why `secondCondMMCcurlCoeffs/Xim_i` is read from **this model's own dictionary**
+and is not the same as `MMCcurlCoeffs/Xim_i`. Level 1 already enforces fine-grained
+locality on the whole cloud; level 2 needs only coarse shadow locality plus fine φ°
+resolution, so its `sP*_m` should be substantially looser. Copying the level-1 values
+across makes the shadow axes utterly dominant and φ° is effectively never selected.
+
+Do not chase φ° weight by shrinking `phiMod_m` below ~β: `φ° = φ·exp(βω)` scatters by
+about `φ·β` at fixed φ, so a normaliser below that resolves OU noise rather than reaction
+progress.
 
 ### The mixing timescale
 
@@ -404,10 +390,10 @@ psi_p  <- psi_p + mixExtent * (psi_bar - psi_p),   psi in { hA, T, Y }
 
 `buildParticleList()` ends with a diagnostics block that reduces across processors and
 reports: the global flagged-particle count, the number of pairs and triples, a
-**split-axis histogram** over all seven candidate axes (`x`, `y`, `z`, `phiModified`,
-`xi_x`, `xi_y`, `xi_z`), and the realised **φ° range**. The histogram is the direct check
-on the balance between conditioning and locality — φ° winning most *reference* splits while
-`x`/`y`/`z` still take a healthy share is the target. The φ° range matters because φ° is
+**split-axis histogram** over the four reference axes (`phiModified`, `xi_x`, `xi_y`,
+`xi_z`), and the realised **φ° range**. The histogram is the direct check on the balance
+between conditioning and shadow-space locality — φ° taking roughly a quarter of the splits
+is the target. The φ° range matters because φ° is
 **not** bounded by 1 even though φ is, which interacts with the coupling's `fHigh` gate.
 The same numbers are appended as a tab-separated row to
 `<case>/postProcessing/secondCondMMCcurl.log` by the master process, with a header on
@@ -650,14 +636,18 @@ subModels
 
     secondCondMMCcurlCoeffs
     {
-        r_i     1e-3;        // LIVE: physical-locality normaliser for the k-d split
+        r_i     1e-3;        // mandatory (base ctor reads it) but NOT a split
+                             //   axis: physical coordinates never enter pairing
 
-        Xim_i                // EXACTLY 4 entries, in this order
+        Xim_i                // EXACTLY 4 entries, in this order.
+                             //   This model's OWN values - read from
+                             //   secondCondMMCcurlCoeffs, not MMCcurlCoeffs,
+                             //   and meant to be LOOSER than the level-1 ones
         {
-            phiMod_m    0.01;   // tight -> phi_deg dominates the splitting
-            sPx_m       0.05;
-            sPy_m       0.05;
-            sPz_m       0.05;
+            phiMod_m    0.1;     // keep >= beta, or you resolve OU noise
+            sPx_m       1.3e-3;  // ~30x looser than the validated level-1 value
+            sPy_m       1.3e-3;
+            sPz_m       1.3e-3;
         }
 
         pairingMethod   local;   // only local pairing is implemented
@@ -743,7 +733,7 @@ modification.
 ### Structural limits
 
 - **No parallel pairing at level 2.** `secondCondMMCcurl::buildParticleList()` always calls
-  `findPairsSC()` directly, never `correctParticleListParallel()`. With a small `R` on many
+  `findPairs()` directly, never `correctParticleListParallel()`. With a small `R` on many
   processors, per-rank flagged counts can fall low enough that pairing quality degrades —
   the diagnostics line reports exactly this.
 - **`magSqrRefVar` is zeroed** (`secondCondMMCcurl.C:149`), so the Cleary & Klimenko

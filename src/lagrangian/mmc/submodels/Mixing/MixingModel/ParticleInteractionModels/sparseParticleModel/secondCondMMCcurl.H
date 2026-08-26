@@ -46,24 +46,32 @@ Description
     variable c by MixingPopeCloud::updatePhi() over a timescale tauC, so it
     stays anchored to the resolved solution instead of free-running.
 
-    Pairing uses a k-d tree search local to this class (findPairsSC /
-    kdTreeSearchSC) in which the three PHYSICAL coordinates, normalised by
-    r_i, compete with the four reference-space axes, normalised by the Xim_i
-    entries.  This mirrors premixedMixParticleModel rather than the inherited
-    mixParticleModel::KkdTreeLikeSearch, whose physical-space branches are
-    commented out.
+    Pairing uses the inherited mixParticleModel::findPairs() /
+    KkdTreeLikeSearch().  Splitting is therefore over the FOUR reference axes
+    only — phiModified and the three shadow positions — and NEVER over the
+    physical coordinates: the physical-space branches in KkdTreeLikeSearch are
+    deliberately disabled, and the ncond = 3 + i offset points lessArg past
+    x, y and z.  This matches MMCcurl, where the shadow positions are likewise
+    the sole carriers of locality.
 
-    That distinction matters.  In MMCcurl the reference variables ARE the
-    shadow positions, so they supply locality of mixing themselves.  Here the
-    reference space mixes phi_modified against the shadow positions, so if a
-    tight phiMod_m makes phi_modified dominant there is nothing left to keep
-    pairs local in physical space, and the model degenerates into mixing
-    composition between particles at opposite ends of the domain.  Keeping the
-    physical axes in contention means phiMod_m can be tightened to give the
-    progress variable more weight WITHOUT sacrificing locality.
+    Consequently r_i is NOT a split axis here.  It is still a mandatory
+    dictionary entry because the base-class constructor reads it (and passes it
+    to mixingSubVolumes), but with pairingMethod local it takes no part in any
+    pairing decision.
 
-    Because the normalisers divide, a SMALLER value makes an axis MORE likely
-    to be chosen as the split dimension.
+    The balance between conditioning on reaction progress and remaining local
+    in shadow space is therefore set ENTIRELY by the ratio of the Xim_i
+    entries: phiMod_m against sPx_m / sPy_m / sPz_m.  Because the normalisers
+    divide, a SMALLER value makes an axis MORE likely to be chosen.
+
+    Note that the k-d tree compares ROOT extents, not local gradients: at the
+    top node the shadow axes span the whole cloud while phiModified spans its
+    own (order-unity) range.  With three shadow axes against one phiModified
+    axis, equal root normalised extents give phiModified about a quarter of the
+    splits.  Setting sP*_m here to the values validated for MMCcurl will make
+    the shadow axes utterly dominant and phiModified will essentially never be
+    selected — these Xim_i are read from this model's own dictionary and are
+    meant to be looser than the first-conditioning ones.
 
     The aISO timescale is computed identically to MMCcurl (from CE only; CL is
     accepted for dictionary compatibility but unused).  Only Y, T, and hA are
@@ -74,7 +82,7 @@ Description
 
     Diagnostics are written to <case>/postProcessing/secondCondMMCcurl.log:
     flagged-particle counts, pair/triple counts, the split-axis histogram over
-    all seven candidate axes, and the realised phiModified range.  Note that
+    the four reference axes, and the realised phiModified range.  Note that
     phiModified is NOT bounded by 1 even though phi is, which matters when the
     thermophysical coupling conditions on it (see KernelEstimation's fHigh).
 
@@ -84,19 +92,22 @@ Description
 
     secondCondMMCcurlCoeffs
     {
-        // Physical-space normalisation. Live: it sets how strongly the k-d
-        // tree insists on locality of mixing against the reference axes.
+        // Required by the base-class constructor, but NOT a split axis:
+        // physical coordinates never take part in the pairing.
         r_i     1e-3;
 
         // 4-entry normalisation for the (phiModified, xi_x, xi_y, xi_z)
-        // reference space.  Tight phiMod_m gives the progress variable more
-        // weight in the splitting.
+        // reference space -- the only thing that sets the balance between
+        // conditioning on progress and staying local in shadow space.
+        // These are this model's OWN values: they are read from
+        // secondCondMMCcurlCoeffs, not from MMCcurlCoeffs, and are meant to
+        // be looser than the first-conditioning ones.
         Xim_i
         {
-            phiMod_m    0.01;
-            sPx_m       0.05;
-            sPy_m       0.05;
-            sPz_m       0.05;
+            phiMod_m    0.1;
+            sPx_m       1.3e-3;
+            sPy_m       1.3e-3;
+            sPz_m       1.3e-3;
         }
 
         pairingMethod   local;
@@ -155,42 +166,6 @@ class secondCondMMCcurl
             scalar mixExtent
         );
 
-        //- Pair the flagged particles using a k-d tree search in which the
-        //  three PHYSICAL coordinates compete against the four reference-space
-        //  axes for the split.
-        //
-        //  The shared mixParticleModel::findPairs()/KkdTreeLikeSearch() has its
-        //  physical-space branches commented out, so only XiR axes are split
-        //  candidates. That is correct for MMCcurl, where the reference
-        //  variables ARE the shadow positions and therefore supply locality
-        //  themselves. It is not correct here: the second-conditioning space
-        //  mixes phi_deg against the shadow positions, so any normalisation
-        //  that makes phi_deg dominant removes the only locality mechanism and
-        //  the model starts pairing particles that are arbitrarily far apart
-        //  in physical space.
-        //
-        //  These two routines mirror premixedMixParticleModel, which keeps
-        //  disX/disY/disZ (normalised by r_i) as ncond 0,1,2 alongside the
-        //  reference variables at ncond = 3+i. With them, tightening phiMod_m
-        //  raises the weight given to phi_deg WITHOUT ever sacrificing
-        //  physical locality, and r_i in secondCondMMCcurlCoeffs becomes live.
-        //
-        //  The shared base implementation is left untouched.
-        void findPairsSC
-        (
-            const DynamicList<eulerianFieldData>& eulerianFieldList,
-            DynamicList<List<label>>& pairs
-        ) const;
-
-        void kdTreeSearchSC
-        (
-            const DynamicList<eulerianFieldData>& particleList,
-            label l,
-            label u,
-            std::vector<label>& pInd,
-            std::vector<label>& L,
-            std::vector<label>& U
-        ) const;
  
  
 protected:
