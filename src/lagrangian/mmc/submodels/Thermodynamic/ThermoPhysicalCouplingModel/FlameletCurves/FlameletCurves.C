@@ -118,7 +118,7 @@ void Foam::FlameletCurves<CloudType>::findEquivalentTempSpeciesCurves()
                 totT += sqr
                     (
                         pPtr->T() 
-                      - TEqvInterpTab.lookUp(pPtr->XiC(this->cVarName()))[i]
+                      - TEqvInterpTab.lookUp(pPtr->XiC(this->cVarNameXiC()))[i]
                     ) * pPtr->wt();
 
             if (i == 1)
@@ -161,7 +161,7 @@ void Foam::FlameletCurves<CloudType>::findEquivalentTempSpeciesCurves()
                     totY += sqr
                         (
                             pPtr->Y()[nsPrime] 
-                          - YEqvInterpTab.lookUp(pPtr->XiC(this->cVarName()))[i]
+                          - YEqvInterpTab.lookUp(pPtr->XiC(this->cVarNameXiC()))[i]
                         ) * pPtr->wt();
 
                 if (i == 1)
@@ -228,7 +228,7 @@ void Foam::FlameletCurves<CloudType>::EqvETargetValues
                 //- of mmc Variables
         
                 const HashTable<label, word>& indexOfCVinXi = XiC.cVarInXi();
-                const word CVariable = this->cVarName();
+                const word CVariable = this->cVarNameXiC();
         
                 scalar XiE = XiC.Vars(indexOfCVinXi[CVariable]).field()[celli];//!!!
                 

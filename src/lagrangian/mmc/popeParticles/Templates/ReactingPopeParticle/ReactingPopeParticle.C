@@ -66,8 +66,13 @@ void Foam::ReactingPopeParticle<ParticleType>::calc
     // Reaction models uses mixture fraction. For now I pass the conditioning 
     // variable  used for density coupling but something more generic is required.
 
-    // Conditioning (state) variable
-    const word cVarName = cloud.coupling().cVarName();
+    // Coupling (state) variable passed to the chemistry.
+    // Must be cVarNameXiC(), NOT cVarName(): condVariable may name a quantity
+    // with no XiC entry on the particle (e.g. 'phiModified', which is
+    // particle-only and absent from the mmcVarSet), and XiC(name) would then
+    // throw "not found in table". cVarNameXiC() resolves to a registered
+    // coupling variable in every case.
+    const word cVarName = cloud.coupling().cVarNameXiC();
 
     if(!cloud.balanceReactionLoad())
     {

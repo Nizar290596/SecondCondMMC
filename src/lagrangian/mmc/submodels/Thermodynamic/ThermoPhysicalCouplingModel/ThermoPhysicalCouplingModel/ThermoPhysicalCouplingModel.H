@@ -78,8 +78,23 @@ class ThermoPhysicalCouplingModel
         //- Indicator is zero or one to ensure source term is zero
         volScalarField Indicator_;
 
-        //- Conditioning variable
+        //- Conditioning variable, as named by condVariable in the
+        //  thermophysicalCoupling dictionary. This is the variable the
+        //  coupling model CONDITIONS ON, which is not necessarily a registered
+        //  coupling variable: 'phiModified' is a particle-only quantity with
+        //  no entry in the mmcVarSet.
         word cVarName_;
+
+        //- The registered coupling variable to use wherever an actual XiC
+        //  entry is required — particle chemistry (ReactingPopeParticle),
+        //  flamelet look-ups, and the carrier array slot in KernelEstimation.
+        //
+        //  Equal to cVarName_ when that names a registered coupling variable.
+        //  When it does not (condVariable phiModified), it falls back to the
+        //  first registered coupling variable, because those consumers need a
+        //  value that actually exists on the particle. Without this,
+        //  XiC(cVarName()) throws "phiModified not found in table".
+        word cVarNameXiC_;
 
         //- List of species to solve 
         boolList solveEqvSpecie_;
@@ -180,6 +195,11 @@ class ThermoPhysicalCouplingModel
 
             //- Return the conditioning variable name
             inline const word& cVarName() const;
+
+            //- Registered coupling variable to use where an actual XiC entry
+            //  is needed. Use this — not cVarName() — for any particle-side
+            //  XiC(name) lookup.
+            inline const word& cVarNameXiC() const;
             
             //- Return const access to the species solved
             inline const Foam::boolList&  solveEqvSpecie() const;

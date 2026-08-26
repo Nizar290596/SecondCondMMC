@@ -125,6 +125,14 @@ Foam::ThermoPhysicalCouplingModel<CloudType>::cVarName() const
 }
 
 
+template<class CloudType>
+inline const Foam::word&
+Foam::ThermoPhysicalCouplingModel<CloudType>::cVarNameXiC() const
+{
+    return cVarNameXiC_;
+}
+
+
 //- Return const access to Indicator
 template<class CloudType>
 inline const Foam::volScalarField& Foam::ThermoPhysicalCouplingModel<CloudType>::Indicator() const

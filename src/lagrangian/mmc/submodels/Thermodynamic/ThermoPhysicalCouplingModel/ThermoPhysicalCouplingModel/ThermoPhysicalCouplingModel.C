@@ -49,7 +49,46 @@ void Foam::ThermoPhysicalCouplingModel<CloudType>::setThermoPhysicalCoupling()
     }
 
     couplingDict.lookup("condVariable") >> cVarName_;
-    
+
+    // Resolve the registered coupling variable to use wherever an actual XiC
+    // entry is required. condVariable may name a quantity that has no entry in
+    // the mmcVarSet -- 'phiModified' is particle-only -- but the particle
+    // chemistry and the flamelet look-ups still need a real coupling value, and
+    // KernelEstimation needs a carrier array slot. Fall back to the first
+    // registered coupling variable in that case.
+    cVarNameXiC_ = word::null;
+
+    forAll(XiCNames_, i)
+    {
+        if (XiCNames_[i] == cVarName_)
+        {
+            cVarNameXiC_ = cVarName_;
+            break;
+        }
+    }
+
+    if (cVarNameXiC_ == word::null)
+    {
+        if (XiCNames_.empty())
+        {
+            FatalErrorInFunction
+                << "condVariable '" << cVarName_ << "' is not a registered "
+                << "coupling variable, and no coupling variables are declared "
+                << "in mmcVariablesDefinitions." << nl
+                << "At least one couplingVar is required to carry the coupling "
+                << "value for the particle chemistry."
+                << exit(FatalError);
+        }
+
+        cVarNameXiC_ = XiCNames_[0];
+
+        Info<< "ThermoPhysicalCouplingModel: condVariable '" << cVarName_
+            << "' is not a registered coupling variable; using '"
+            << cVarNameXiC_ << "' wherever an XiC entry is required "
+            << "(particle chemistry, flamelet look-up, carrier slot)." << endl;
+    }
+
+
     tauRelaxBlending_ = couplingDict.lookupOrDefault<Switch>("tauRelaxBlending",false);
 
     const scalar tauTmpTarget(readScalar(couplingDict.lookup("tauRelax")));
@@ -145,7 +184,9 @@ Foam::ThermoPhysicalCouplingModel<CloudType>::ThermoPhysicalCouplingModel
     Indicator_(cm.Indicator()),
     
     cVarName_(cm.cVarName()),
-    
+
+    cVarNameXiC_(cm.cVarNameXiC()),
+
     solveEqvSpecie_(cm.solveEqvSpecie_),
         
     tauRelaxBlending_(cm.tauRelaxBlending_),

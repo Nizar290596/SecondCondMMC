@@ -518,6 +518,14 @@ which creates two problems the constructor and `buildPhiModCell()` solve:
    **reused as a carrier** for the conditioning value, in both the particle list and the
    LES cell list (`KernelEstimation.C:69-72, 210-219`). A missing coupling variable is a
    `FatalError`.
+
+   This is resolved once in the base class as **`cVarNameXiC()`** — equal to `cVarName()`
+   when that names a registered coupling variable, and the first registered coupling
+   variable otherwise. Any code that needs an *actual* `XiC` entry must use it rather than
+   `cVarName()`: the particle chemistry (`ReactingPopeParticle.C:70`) and the flamelet
+   look-ups (`FlameletCurves.C`) both call `XiC(name)`, which throws
+   `phiModified not found in table. Valid entries: 1(z)` if handed the raw conditioning
+   name.
 2. **No cell value.** `buildPhiModCell()` projects φ° onto the mesh as a weight-averaged
    mean over each *super-cell* of the particle-number controller, using flagged particles
    only, and writes that mean into every cell of the super-cell

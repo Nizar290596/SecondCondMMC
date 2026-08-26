@@ -766,14 +766,11 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
     // projected from the flagged particles each step (buildPhiModCell()).
     phiModEnabled_ = (this->cVarName() == "phiModified");
 
-    if (phiModEnabled_ && this->XiCNames().empty())
-        FatalErrorInFunction
-            << "condVariable 'phiModified' requires at least one registered "
-            << "coupling variable to carry the conditioning slot." << nl
-            << exit(FatalError);
-
-    const word condName =
-        phiModEnabled_ ? this->XiCNames()[0] : this->cVarName();
+    // cVarNameXiC() is cVarName() when that is a registered coupling variable,
+    // and the first registered coupling variable otherwise. The base class
+    // resolves it and fails there if no coupling variable exists at all, so
+    // this is the single source of truth for "which slot carries the value".
+    const word condName = this->cVarNameXiC();
 
     condSlotXiC_ = this->XiC().cVarInXiC()[condName];
     condSlotXi_  = this->XiC().cVarInXi()[condName];
