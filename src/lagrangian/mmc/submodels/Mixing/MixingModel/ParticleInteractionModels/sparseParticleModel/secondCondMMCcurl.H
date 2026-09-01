@@ -41,10 +41,12 @@ Description
     and global pairing methods as any other.
 
     The stage is configured entirely by its own coefficients sub-dictionary and
-    reads nothing belonging to the first conditioning. In particular the
-    pairing axes are named explicitly and are looked up by name from the
-    particle at run time, so this model has no positional dependence on the
-    order of the mmcVarSet reference variables.
+    reads nothing belonging to the first conditioning. (The reverse is not
+    true: while this stage is enabled, MMCcurl restricts the first conditioning
+    to the progress variable phi so that the composition is not mixed twice.)
+    In particular the pairing axes are named explicitly and are looked up by
+    name from the particle at run time, so this model has no positional
+    dependence on the order of the mmcVarSet reference variables.
 
     Which particles the stage acts on is a cloud-level property
     (secondCondFlag, assigned from secondConditioning/R) because the reaction,
@@ -55,7 +57,7 @@ Description
     \verbatim
     subModels
     {
-        mixingModel             phiMMCcurl;      // mixes phi for all particles
+        mixingModel             MMCcurl;
         secondCondMixingModel   secondCondMMCcurl;
 
         secondCondMMCcurlCoeffs

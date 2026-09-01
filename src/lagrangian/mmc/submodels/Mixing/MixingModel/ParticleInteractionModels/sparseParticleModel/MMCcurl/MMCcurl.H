@@ -81,10 +81,14 @@ class MMCcurl
     protected:
 
         //- Apply the pair mixing action once the extent is known.
-        //  Split out of mixpair() so that a stage which mixes a different set
-        //  of properties (see phiMMCcurl) is a separate, independently
-        //  selected and independently configured mixing model instead of a
-        //  branch inside this one.
+        //  Split out of mixpair() to keep the time-scale calculation and the
+        //  choice of mixed properties separable, and to give a derived model
+        //  a seam to change the latter without duplicating the former.
+        //
+        //  While the cloud's second-conditioning stage is enabled this mixes
+        //  only the progress variable phi: the composition of the flagged
+        //  subset is then mixed by secondCondMMCcurl in its own reference
+        //  space, and mixing it here as well would mix those scalars twice.
         virtual void mixPairProperties
         (
             particleType& p,

@@ -242,7 +242,24 @@ void Foam::MMCcurl<CloudType>::mixPairProperties
     const scalar deltaT
 )
 {
-    if (!this->owner().sootingFlame())
+    if (this->owner().secondCondMixingEnabled())
+    {
+        // Second conditioning active: the first conditioning mixes ONLY the
+        // reaction progress variable phi, for every pair (no flagged/unflagged
+        // distinction). Composition (Y, hA, XiC) is NOT mixed here; the flagged
+        // subset mixes Y/T/hA later in the second conditioning stage. phi is
+        // reacted afterwards by W(phi) and is mixed nowhere else.
+        const scalar wtSum = p.wt() + q.wt();
+
+        if (wtSum > VSMALL)
+        {
+            const scalar phiAv = (p.wt()*p.phi() + q.wt()*q.phi())/wtSum;
+
+            p.phi() += mixExtent*(phiAv - p.phi());
+            q.phi() += mixExtent*(phiAv - q.phi());
+        }
+    }
+    else if (!this->owner().sootingFlame())
     {
         particleType::mixProperties(p,q,mixExtent);
     }

@@ -218,21 +218,23 @@ subModels
 // A second, independent mixing stage that acts on a random subset of the
 // cloud and pairs it in its own reference space.
 //
-// The two stages are fully independent: each is selected by its own keyword,
-// configured by its own coefficients sub-dictionary, and neither model tests
-// for the presence of the other. In a two-level set-up the first stage is
-// normally phiMMCcurl - which mixes only the progress variable phi, for every
-// particle - and the second stage mixes the composition of the subset:
+// Each stage is selected by its own keyword and configured by its own
+// coefficients sub-dictionary:
 //
-//     mixingModel             phiMMCcurl;
+//     mixingModel             MMCcurl;
 //     secondCondMixingModel   secondCondMMCcurl;
 //
-// Use plain MMCcurl as the mixingModel for the usual single-level behaviour.
+// While secondConditioning/enabled is true, MMCcurl restricts the first
+// conditioning to the progress variable phi, which every particle carries; the
+// composition of the flagged subset is then mixed by secondCondMMCcurl in its
+// own reference space. Mixing the composition in both stages would mix those
+// scalars twice, so the first stage stands down from it.
 //
-// Note that with phiMMCcurl the composition is not mixed by the first stage
-// at all, so particles outside the subset keep their injection composition.
-// They also skip the chemistry and are excluded from the thermophysical
-// coupling and from the T/Y Eulerian statistics.
+// Consequence: with the gate enabled the composition is not mixed by the first
+// stage at all, so particles outside the subset keep their injection
+// composition. They also skip the chemistry and are excluded from the
+// thermophysical coupling and from the T/Y Eulerian statistics. Set
+// enabled false for the usual single-level behaviour.
 
 secondConditioning
 {
@@ -251,18 +253,7 @@ secondConditioning
     Z_phi                0.0;
 }
 
-// ... and inside subModels:
-//
-//     phiMMCcurlCoeffs
-//     {
-//         r_i             0.00193;
-//         Xim_i           { sPx_m 0.03; sPy_m 0.03; sPz_m 0.03; }
-//         pairingMethod   global;
-//         aISO            true;
-//         meanTimeScale   true;
-//         CL              0.5;
-//         CE              0.1;
-//     }
+// ... and inside subModels, alongside the usual MMCcurlCoeffs:
 //
 //     secondCondMMCcurlCoeffs
 //     {

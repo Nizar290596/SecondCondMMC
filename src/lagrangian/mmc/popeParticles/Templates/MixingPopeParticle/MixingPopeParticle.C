@@ -100,8 +100,9 @@ void Foam::MixingPopeParticle<ParticleType>::mixProperties
 )
 {
     // Composition mixing. Which mixing stage calls this, and on which pairs,
-    // is decided by the selected mixing model - a stage that mixes a different
-    // property set (phiMMCcurl, secondCondMMCcurl) simply does not call it.
+    // is decided by the mixing model: MMCcurl mixes only phi while the second
+    // conditioning is enabled, and secondCondMMCcurl mixes Y/T/hA itself, so
+    // neither of those routes reaches this function.
     ParticleType::mixProperties(p, q, mixExtent);
 }
 
