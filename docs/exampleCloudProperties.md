@@ -151,11 +151,14 @@ subModels
         fHigh               0.985;  // upper flamability limit
         fm                  0.030;  // same as in mixing model
 
-        condVariable        f;
         dfMax               0.015;  // maximum distance in f space allowed to do extrapolation
         C2                  0.1;    // used to control resolution
 
-        nElements           25;
+        nNearest            20;     // number of nearest neighbours per kernel (default 20)
+        rMax                1.0e9;  // cap on the physical kernel radius
+
+        // NOTE: the conditioning variable is NOT set here. It is read from
+        // thermophysicalCoupling/condVariable below.
     }
 
 
@@ -167,21 +170,25 @@ subModels
     {
         //- Parameters r_i and f_m as per Eq.(29) Cleary & Klimenko, Phys Fluids 23, 115102, 2011
         // (0.5*(3120*2.42e-09/6/(0.000175)**(2-2.36)*1/0.03)**(1/2.36))/(3**0.5)
-        ri                      0.00193;
+        r_i                     0.00193;
 
-        Ximi
+        // One normalisation factor per pairing axis, keyed "<axis>_m".
+        // The axes of the first conditioning are the reference variables
+        // declared in mmcVariablesDefinitions, so with shadow positions:
+        Xim_i
         {
-            fm                     0.03;
+            sPx_m                  0.03;
+            sPy_m                  0.03;
+            sPz_m                  0.03;
         }
-
-        localnessLimited          false;
-
-        fLow                       0.01;    // Particles below fLow will only be mixed locally
-
-        fHigh                      0.99;    // Particles above fHigh will only be mixed locally
 
         aISO                       true;    // Select either aISO false or true -- if false it
                                             // defaults to C&K model
+                                            // NOTE: the C&K time scale needs a reference
+                                            // variable with a transported Eulerian field
+                                            // (referenceType interpolated). With shadow
+                                            // positions its |grad Xi|^2 is identically zero
+                                            // and no pair would mix.
         
         meanTimeScale              true;    // Use the mean of the two particle times
                                             // if set to false it uses the min()
@@ -203,6 +210,87 @@ subModels
     }
 
 }
+
+
+// ===========================================================================
+//                      Second conditioning (optional)
+// ===========================================================================
+// A second, independent mixing stage that acts on a random subset of the
+// cloud and pairs it in its own reference space.
+//
+// The two stages are fully independent: each is selected by its own keyword,
+// configured by its own coefficients sub-dictionary, and neither model tests
+// for the presence of the other. In a two-level set-up the first stage is
+// normally phiMMCcurl - which mixes only the progress variable phi, for every
+// particle - and the second stage mixes the composition of the subset:
+//
+//     mixingModel             phiMMCcurl;
+//     secondCondMixingModel   secondCondMMCcurl;
+//
+// Use plain MMCcurl as the mixingModel for the usual single-level behaviour.
+//
+// Note that with phiMMCcurl the composition is not mixed by the first stage
+// at all, so particles outside the subset keep their injection composition.
+// They also skip the chemistry and are excluded from the thermophysical
+// coupling and from the T/Y Eulerian statistics.
+
+secondConditioning
+{
+    enabled             true;   // constructs the second mixing model
+
+    R                    0.1;   // probability that a new particle joins the
+                                // subset (secondCondFlag = 1)
+
+    Tu                 300.0;   // phi = (T - Tu)/(Tb - Tu) at injection,
+    Tb                2000.0;   // clipped to [0,1]
+
+    beta                 1.0;   // phi_deg = phi * exp(beta * omega_OU)
+    tauOU              1.0e-3;  // OU relaxation time [s]
+
+    A_phi                0.0;   // W(phi) = A*(1-phi)*exp[Z*(phi-1)]
+    Z_phi                0.0;
+}
+
+// ... and inside subModels:
+//
+//     phiMMCcurlCoeffs
+//     {
+//         r_i             0.00193;
+//         Xim_i           { sPx_m 0.03; sPy_m 0.03; sPz_m 0.03; }
+//         pairingMethod   global;
+//         aISO            true;
+//         meanTimeScale   true;
+//         CL              0.5;
+//         CE              0.1;
+//     }
+//
+//     secondCondMMCcurlCoeffs
+//     {
+//         r_i             1.0e-3;
+//
+//         // The axes this stage pairs on, in order. Any scalar registered on
+//         // the particle may be used. Defaults to phiModified followed by the
+//         // mmcVarSet reference variables.
+//         referenceAxes   ( phiModified sPx sPy sPz );
+//
+//         // One entry per axis above, keyed "<axis>_m". A tight
+//         // phiModified_m makes the k-d tree split preferentially on the
+//         // progress variable.
+//         Xim_i
+//         {
+//             phiModified_m   0.01;
+//             sPx_m           0.05;
+//             sPy_m           0.05;
+//             sPz_m           0.05;
+//         }
+//
+//         particleFilter  secondCondFlag;   // or: none
+//         pairingMethod   local;            // local | subVolumes | global
+//
+//         meanTimeScale   true;
+//         CL              0.5;
+//         CE              0.1;
+//     }
 
 
 // This is the subdictionary of the thermophysical model

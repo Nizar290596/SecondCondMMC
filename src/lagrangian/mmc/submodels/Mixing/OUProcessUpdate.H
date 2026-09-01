@@ -37,13 +37,10 @@ Description
  
     Stationary distribution: ω ~ N(0,1), independent of Δt.
  
-    Two entry points are provided:
- 
-      - OUStateUpdate()        : primitive scalar update, no cloud/particle
-                                 dependencies.
-      - applyOUProcessUpdate() : template helper that checks secondCondFlag,
-                                 draws the Gaussian variate from the cloud RNG,
-                                 and writes the result back to the particle.
+    OUStateUpdate() is the primitive scalar update; it has no cloud or particle
+    dependencies. It is driven once per time step from
+    MixingPopeCloud::updateOUProcess(), which owns the subset test, the random
+    draw and the phi-degree recomputation.
  
     Note: beta (cloud.secondCondBeta()) is NOT used here.  It enters only
     when computing the modified conditioning variable
@@ -86,31 +83,6 @@ inline scalar OUStateUpdate
 {
     const scalar decay = exp(-dt / tauOU);
     return omegaOld * decay + sqrt(1.0 - decay*decay) * xi;
-}
- 
- 
-// Template helper: advance the OU state of a single particle by one time step.
-//
-// Called from MixingPopeParticle::setCellValues() (once per global Δt).
-// Skips particles with secondCondFlag == 0 or tauOU <= SMALL.
-template<class ParticleType, class CloudType>
-inline void applyOUProcessUpdate
-(
-    ParticleType& p,
-    CloudType& cloud,
-    const scalar dt
-)
-{
-    if (p.secondCondFlag() == 1)
-    {
-        const scalar tauOU = cloud.secondCondTauOU();
- 
-        if (tauOU > SMALL)
-        {
-            const scalar xi = cloud.rndGen().Normal(0, 1);
-            p.omegaOU() = OUStateUpdate(p.omegaOU(), dt, tauOU, xi);
-        }
-    }
 }
  
  

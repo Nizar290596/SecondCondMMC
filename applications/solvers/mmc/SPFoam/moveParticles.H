@@ -59,8 +59,7 @@ if(pdfMethodOn)
             // 4. Advance ω_OU and recompute φ° — flagged particles only,
             //    after reaction so φ° reflects the reacted φ
             pSets[pSi].updateOUProcess(deltaT);
- 
-        Info << "\tFinish mixing in " << t1mix - t0mix<< "s" <<endl;
+
             // 5. Second-conditioning mixing — uses updated φ° values
             //    (stored as eulerianFieldData.XiR()[0] in buildParticleList)
             const scalar t0sc = runTime.elapsedCpuTime();

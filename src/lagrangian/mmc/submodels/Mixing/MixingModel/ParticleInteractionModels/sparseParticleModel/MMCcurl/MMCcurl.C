@@ -69,7 +69,12 @@ Foam::MMCcurl<CloudType>::MMCcurl
 
     beta_(this->coeffDict().lookupOrDefault("beta", 3)),
 
-    aISO_(this->coeffDict().lookupOrDefault("aISO",true))
+    aISO_(this->coeffDict().lookupOrDefault("aISO",true)),
+
+    // Was missing, which left this const Switch default-constructed in every
+    // cloned model and silently changed the pair time scale from the harmonic
+    // mean to the minimum
+    meanTimeScale_(cm.meanTimeScale_)
 {
     printInfo();
 }
@@ -212,98 +217,102 @@ void Foam::MMCcurl<CloudType>::mixpair
 
             scalar mixExtent = 1.0 - exp(-deltaT / (tauMix + VSMALL));
 
-            
-//            if (!this->owner().sootingFlame())
-	    if (this->owner().secondCondMixingEnabled())
-            {
-		// Second conditioning active: first conditioning mixes ONLY the
-                // reaction progress variable phi, for every pair (no flagged/
-                // unflagged distinction). Composition (Y, hA, XiC) is NOT mixed
-                // here; the flagged subset mixes Y/T/hA later in second
-                // conditioning. phi is reacted afterwards by W(phi) and is mixed
-                // nowhere else.
-                const scalar wtSum = p.wt() + q.wt();
-                if (wtSum > VSMALL)
-                {
-                    const scalar phiAv =
-                        (p.wt()*p.phi() + q.wt()*q.phi())/wtSum;
-                    p.phi() += mixExtent*(phiAv - p.phi());
-                    q.phi() += mixExtent*(phiAv - q.phi());
-                }
-	    }
-	    else if (!this->owner().sootingFlame())
-	    {
-                particleType::mixProperties(p,q,mixExtent);
-            }
-            else // if it is a sooting flame
-            {   
-                // mix soot species at different rate
-                
-                // calculate mean gas diffusivity
-                scalar Dgas = 0.5 * (pEulFields.D() + qEulFields.D());
-
-                scalar Tsoot = 0.5 * (p.T() + q.T());
-
-                // Mean viscosity
-                scalar mugas = 0.5 * (pEulFields.mu() + qEulFields.mu());
-
-                //calc Kn number Kn = rl/R_soot for all soot species >= MW200
-                //rl mean free path = k*T/[sqrt(2)*pi*d^2*p]
-                //d takes kinetic diameter of N2, p = 101325 [Pa]
-                scalar rl = 2.3147e-10 * Tsoot;
-
-                const wordList SpeciesNames = this->owner().composition().componentNames();
-
-                scalarList ScaledExtent(SpeciesNames.size());
-
-                //calc mixExtent for species
-                forAll(SpeciesNames,Spi)
-                {
-                    if (this->owner().composition().molWt(Spi) < 200)
-                        ScaledExtent[Spi] = mixExtent;
-                    else //calculate Kn
-                    {
-                        
-                        scalar sootMW = this->owner().composition().molWt(Spi);
-
-                        scalar sootParticleMass = sootMW/1000/6.023e23; //[kg/per molecule]
-
-                        scalar sootrho(this->owner().sootSolidDensity());
-
-                        scalar sootV = (3.0*sootParticleMass)/(4.0*M_PI*sootrho);
-
-                        scalar R_soot = pow(sootV,1.0/3.0);
-
-                        scalar Kn = rl/R_soot;
-
-
-                        //if Kn > a threshold, mixed as gas species (equal diffusivity)
-                        if (Kn > this->owner().sootMinKn())
-                        {
-                            ScaledExtent[Spi] = mixExtent;
-                        }
-                        else
-                        {   
-                            // calc diffusivity of soot species
-                            // D_soot = (C*K*T)/(3*pi*mu*d)
-                            // C= 1 + Kn(1.257 + 0.4 exp( -0.55/(Kn/2)))
-                            scalar C = 1.0 + Kn*(1.257 + 0.4*exp(-0.55/(Kn/2.0)));
-                            scalar k = 1.38065e-23;
-
-                            scalar D_soot = ((C*k*Tsoot)/(6.0*M_PI*R_soot * mugas));
-
-                            scalar Scaled_tauMix = Dgas/D_soot * tauMix;
-
-                            ScaledExtent[Spi] = 1.0 - exp(-deltaT / (Scaled_tauMix + VSMALL));
-                        }
-                    }
-                }
-
-                // ScaledExtent is a list. 
-                particleType::mixProperties(p,q,mixExtent,ScaledExtent);
-            } // end of if sooting flame
+            // Which properties are mixed is delegated, so that a stage that
+            // mixes a different property set is a separate mixing model rather
+            // than a branch in here. MMCcurl itself has no knowledge of any
+            // other mixing stage.
+            this->mixPairProperties
+            (
+                p, pEulFields, q, qEulFields, mixExtent, tauMix, deltaT
+            );
         } // end of if mixing
     }
+}
+
+
+template <class CloudType>
+void Foam::MMCcurl<CloudType>::mixPairProperties
+(
+    particleType& p,
+    const eulerianFieldData& pEulFields,
+    particleType& q,
+    const eulerianFieldData& qEulFields,
+    const scalar mixExtent,
+    const scalar tauMix,
+    const scalar deltaT
+)
+{
+    if (!this->owner().sootingFlame())
+    {
+        particleType::mixProperties(p,q,mixExtent);
+    }
+    else // if it is a sooting flame
+    {
+        // mix soot species at different rate
+
+        // calculate mean gas diffusivity
+        scalar Dgas = 0.5 * (pEulFields.D() + qEulFields.D());
+
+        scalar Tsoot = 0.5 * (p.T() + q.T());
+
+        // Mean viscosity
+        scalar mugas = 0.5 * (pEulFields.mu() + qEulFields.mu());
+
+        //calc Kn number Kn = rl/R_soot for all soot species >= MW200
+        //rl mean free path = k*T/[sqrt(2)*pi*d^2*p]
+        //d takes kinetic diameter of N2, p = 101325 [Pa]
+        scalar rl = 2.3147e-10 * Tsoot;
+
+        const wordList SpeciesNames = this->owner().composition().componentNames();
+
+        scalarList ScaledExtent(SpeciesNames.size());
+
+        //calc mixExtent for species
+        forAll(SpeciesNames,Spi)
+        {
+            if (this->owner().composition().molWt(Spi) < 200)
+                ScaledExtent[Spi] = mixExtent;
+            else //calculate Kn
+            {
+
+                scalar sootMW = this->owner().composition().molWt(Spi);
+
+                scalar sootParticleMass = sootMW/1000/6.023e23; //[kg/per molecule]
+
+                scalar sootrho(this->owner().sootSolidDensity());
+
+                scalar sootV = (3.0*sootParticleMass)/(4.0*M_PI*sootrho);
+
+                scalar R_soot = pow(sootV,1.0/3.0);
+
+                scalar Kn = rl/R_soot;
+
+
+                //if Kn > a threshold, mixed as gas species (equal diffusivity)
+                if (Kn > this->owner().sootMinKn())
+                {
+                    ScaledExtent[Spi] = mixExtent;
+                }
+                else
+                {   
+                    // calc diffusivity of soot species
+                    // D_soot = (C*K*T)/(3*pi*mu*d)
+                    // C= 1 + Kn(1.257 + 0.4 exp( -0.55/(Kn/2)))
+                    scalar C = 1.0 + Kn*(1.257 + 0.4*exp(-0.55/(Kn/2.0)));
+                    scalar k = 1.38065e-23;
+
+                    scalar D_soot = ((C*k*Tsoot)/(6.0*M_PI*R_soot * mugas));
+
+                    scalar Scaled_tauMix = Dgas/D_soot * tauMix;
+
+                    ScaledExtent[Spi] = 1.0 - exp(-deltaT / (Scaled_tauMix + VSMALL));
+                }
+            }
+        }
+
+        // ScaledExtent is a list. 
+        particleType::mixProperties(p,q,mixExtent,ScaledExtent);
+    } // end of if sooting flame
 }
 
 

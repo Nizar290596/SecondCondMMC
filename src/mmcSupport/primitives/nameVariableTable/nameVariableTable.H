@@ -115,6 +115,21 @@ class nameVariableTable
         //- Get access to the stored variable
         const scalar& get(const word& varName) const;
 
+        //- True if a variable of this name has been registered
+        //  Use this before get() - get() does not check for a missing name
+        //  outside of a FULLDEBUG build
+        bool found(const word& varName) const;
+
+        //- Index of a registered variable, or -1 if it is not registered
+        //  The index is shared by every table of the same name, so it can be
+        //  looked up once and reused for every particle of a cloud
+        label indexOf(const word& varName) const;
+
+        //- Get access to a stored variable by its cached index
+        //  Returns a reference to a static zero if the index is out of range
+        //  for this particular table
+        const scalar& get(const label ind) const;
+
         //- Get the names of all variables stored
         wordList getAllVarNames() const;
 

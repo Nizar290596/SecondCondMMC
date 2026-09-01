@@ -190,24 +190,36 @@ class mixParticleModel
         
         // Reference Variable Settings
             
-            //- Information about the reference variable 
+            //- Information about the reference variable
             const mmcVarSet& XiR_;
 
-            //- Names of the reference variables
+            //- Names of the reference variables, ordered so that XiRNames_[i]
+            //  is the name of the particle's XiR()[i]. Do NOT use
+            //  mmcVarSet::rVarInXi().toc() for this - a HashTable's table of
+            //  contents is in hash order, which is unrelated to the index
+            //  assigned by rVarInXiR().
             const wordList XiRNames_;
-            
-            //- Number of reference variables
-            const label numXiR_;      
 
-            //- Normalisation factors
-	    //  Default size matches numXiR_ (one per first-conditioning
-            //  reference variable). Derived models that use a different
-            //  reference space (e.g. secondCondMMCcurl with 4D
-            //  (phiModified, xi_x, xi_y, xi_z)) overwrite this list in
-            //  their constructor.
-            List<scalar> Xii_;
+            //- Number of reference variables
+            const label numXiR_;
+
+            //- Names of the axes THIS stage pairs on, in the order in which
+            //  referenceVector() writes them. For the first conditioning this
+            //  is XiRNames_; a stage that pairs in its own space (see
+            //  secondCondMMCcurl) passes its own list to the protected
+            //  constructor below.
+            const wordList refAxisNames_;
+
+            //- Normalisation factor per entry of refAxisNames_, read from the
+            //  stage's own Xim_i sub-dictionary as "<axisName>_m"
+            const List<scalar> Xii_;
+
             const scalar ri_;
-            //const List<scalar> Xii_;
+
+            //- For each pairing axis, its index into XiRNames_, or -1 when the
+            //  axis is not an mmcVarSet reference variable and therefore has
+            //  no Eulerian field to take |grad Xi|^2 from
+            const labelList axisToRefVar_;
 
         // (Optional) Discard particles for parallel mixing if their reference 
         // variable, XiR(), is below fLow or above fMax
@@ -280,19 +292,40 @@ class mixParticleModel
             //  from the const k-d tree routine.
             mutable List<label> splitAxisHistogram_;
 
-        // Private Member Functions
-        
-            //- Build particle list and correct for parallel runs
-            //void buildParticleList();
+        // Protected Member Functions
 
-	    //  Virtual so derived models can filter the particle set before pairing
-            virtual void buildParticleList();
+            //- Build the particle list and correct for parallel runs.
+            //  This is shared by every mixing stage - a stage customises it
+            //  through the three hooks below rather than by re-implementing it,
+            //  so that every stage keeps the parallel pairing path.
+            void buildParticleList();
 
-            //- Build particle list for particles considered only for local 
-            //  mixing
-            //  See also fLow_ and fHigh_
-            //  --> Note: This clears the old particleList_ 
-            //void buildParticleListLocalMixing(const scalar fLow, const scalar fHigh);
+            // ---- Stage customisation hooks ---------------------------------
+
+            //- Does this particle take part in this mixing stage?
+            //  Default: every particle in the cloud.
+            virtual bool includeParticle(const particleType& p) const
+            {
+                return true;
+            }
+
+            //- Write this stage's reference-space coordinates for one particle.
+            //  xi is pre-sized to nRefDims(). Default: the particle's
+            //  first-conditioning reference variables, in XiRNames_ order.
+            virtual void referenceVector
+            (
+                const particleType& p,
+                scalarField& xi
+            ) const;
+
+            //- Called at the end of buildParticleList() on every process, after
+            //  the pairs are known. Hook for per-stage diagnostics.
+            //  Must be collective-safe: buildParticleList() has no early return,
+            //  so an override may use reduce().
+            virtual void reportPairing() const
+            {}
+
+            // ----------------------------------------------------------------
 
             //- Get the processor IDs in which particles will mix
             List<label> getParticleMixingProcessors();
@@ -310,10 +343,24 @@ class mixParticleModel
             //- Mix the list of particles
             virtual void SmixList() ;
 
-            //- Read from the dictionary the normalisation factors for the
-            //- reference variable
-            List<scalar> getXiNormalisation();
-            
+            //- Read one normalisation factor per pairing axis from this
+            //  stage's own Xim_i sub-dictionary, keyed "<axisName>_m".
+            //  Indexed by position in axisNames, which is also the order
+            //  referenceVector() writes - so a normaliser can never be
+            //  attached to the wrong axis.
+            List<scalar> getXiNormalisation(const wordList& axisNames) const;
+
+            //- Reference variable names ordered by their rVarInXiR() index,
+            //  so that names[i] names the particle's XiR()[i]
+            static wordList orderedRefVarNames(const mmcVarSet& Xi);
+
+            //- Map each pairing axis to its index in XiRNames_, or -1
+            static labelList mapAxesToRefVars
+            (
+                const wordList& axisNames,
+                const wordList& refVarNames
+            );
+
             void findPairs
             (
                 const DynamicList<eulerianFieldData>& eulerianFieldList,
@@ -333,7 +380,8 @@ class mixParticleModel
     public:
         // Constructors
 
-            //- Construct from dictionary
+            //- Construct from dictionary, pairing on the mmcVarSet reference
+            //  variables (the first-conditioning space)
             mixParticleModel
             (
                 const dictionary& dict,
@@ -342,12 +390,27 @@ class mixParticleModel
                 const mmcVarSet& Xi
             );
 
+            //- Construct from dictionary, pairing on a stage-specific set of
+            //  axes. axisNames both selects the "<name>_m" normalisers from
+            //  this stage's Xim_i sub-dictionary and fixes the component order
+            //  that referenceVector() must write. Passing the axes here rather
+            //  than patching Xii_ afterwards keeps mixSubVolumes_ - which is
+            //  built from Xii_[0] - consistent with the stage's own space.
+            mixParticleModel
+            (
+                const dictionary& dict,
+                CloudType& owner,
+                const word& type,
+                const mmcVarSet& Xi,
+                const wordList& axisNames
+            );
+
             //- Construct copy
-            mixParticleModel 
+            mixParticleModel
             (
                 const mixParticleModel<CloudType>& cm
             );
-            
+
 
         // Destructor
         
@@ -375,10 +438,24 @@ class mixParticleModel
                
         // Inline
                
-            // inside mmcVarSet
+            //- Number of mmcVarSet reference variables. This is the size of the
+            //  particle's XiR()/dXiR() arrays and is the same for every stage.
+            //  For the number of axes THIS stage pairs on, use nRefDims().
             inline label numXiR() const
             {
                 return numXiR_;
+            };
+
+            //- Number of dimensions of this stage's pairing space
+            inline label nRefDims() const
+            {
+                return Xii_.size();
+            };
+
+            //- Names of this stage's pairing axes, in referenceVector() order
+            inline const wordList& refAxisNames() const
+            {
+                return refAxisNames_;
             };
 
 	    //- Per-process histogram of split-axis selections from the most

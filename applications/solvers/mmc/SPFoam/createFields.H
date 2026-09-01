@@ -251,22 +251,72 @@
         //const fileName mmcVersion = "mmcFoam";
         //const fileName solverDir = userDir/mmcVersion/"applications/solvers/mmc/vlShadowPositionFoam";
 
-//	const fileName solverDir = "/home/562/nh4682/OpenFOAM/nh4682-v2406/mmcFoam/applications/solvers/mmc/vlShadowPositionFoam";
-//	const fileName solverDir = "/home/nizar/OpenFOAM/nizar-v2406/mmcFoam/applications/solvers/mmc/SPFoam";
-	const fileName solverDir = "/home/562/nh4682/OpenFOAM/nh4682-v2406/mmcFoam/applications/solvers/mmc/SPFoam";
+        // Where to find mmcVariablesDefinitions:
+        //   1. constant/ in the case - preferred, so the variable definitions
+        //      travel with the case and the solver stays relocatable
+        //   2. the solver source directory resolved from $MMC_PROJECT_USER_DIR
+        //      (the same variable Make/options already uses), kept for
+        //      backward compatibility with existing set-ups
+        autoPtr<IOdictionary> mmcVarDefsPtr;
 
-        const IOdictionary control
-        (
-            IOobject
+        {
+            IOobject caseIO
             (
                 "mmcVariablesDefinitions",
-                // Location of solver
-                solverDir,
+                runTime.constant(),
                 mesh,
                 IOobject::MUST_READ,
                 IOobject::NO_WRITE
-            )
-        );
+            );
+
+            if (caseIO.typeHeaderOk<IOdictionary>(true))
+            {
+                Info << "Reading mmcVariablesDefinitions from constant/"
+                     << nl << endl;
+
+                mmcVarDefsPtr.reset(new IOdictionary(caseIO));
+            }
+            else
+            {
+                const fileName mmcUserDir(getEnv("MMC_PROJECT_USER_DIR"));
+
+                if (mmcUserDir.empty())
+                {
+                    FatalErrorInFunction
+                        << "mmcVariablesDefinitions was not found in the case "
+                        << "constant/ directory, and MMC_PROJECT_USER_DIR is "
+                        << "not set so the solver directory cannot be located."
+                        << nl
+                        << "Copy mmcVariablesDefinitions into constant/."
+                        << exit(FatalError);
+                }
+
+                const fileName solverDir
+                (
+                    mmcUserDir/"applications"/"solvers"/"mmc"/"SPFoam"
+                );
+
+                Info << "Reading mmcVariablesDefinitions from " << solverDir
+                     << nl << endl;
+
+                mmcVarDefsPtr.reset
+                (
+                    new IOdictionary
+                    (
+                        IOobject
+                        (
+                            "mmcVariablesDefinitions",
+                            solverDir,
+                            mesh,
+                            IOobject::MUST_READ,
+                            IOobject::NO_WRITE
+                        )
+                    )
+                );
+            }
+        }
+
+        const IOdictionary& control = mmcVarDefsPtr();
 
         const dictionary entries(control.subDict("variables"));
         

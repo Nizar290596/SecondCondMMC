@@ -18,8 +18,17 @@ forAll(cellsInLaplacianCell,cellLaplaceI) {
         Umean[i] = Umean[i] + rho[cellsInLaplacianCell[cellLaplaceI][cellDNSI]]*U[cellsInLaplacianCell[cellLaplaceI][cellDNSI]][i];
     }
     }
-    for (label i = 0; i < 3; i++) {
-        Uint[cellLaplaceI][i] = Umean[i] / rhoAverage;
+    // A coarse cell that no LES cell centre mapped into has rhoAverage == 0.
+    // Dividing there wrote NaN into Uint, and the NaN then propagated through
+    // coarseLap -> laplaceSim -> uPrime -> vb -> the mixing time scale.
+    if (rhoAverage > SMALL) {
+        for (label i = 0; i < 3; i++) {
+            Uint[cellLaplaceI][i] = Umean[i] / rhoAverage;
+        }
+    } else {
+        for (label i = 0; i < 3; i++) {
+            Uint[cellLaplaceI][i] = 0.0;
+        }
     }
 }
 Uint.correctBoundaryConditions();

@@ -311,22 +311,26 @@ void Foam::MixingPopeCloud<CloudType>::updatePhiReaction(const scalar deltaT)
     // the second conditioning runs.
     const scalar A = secondCondAPhi_;
     const scalar Z = secondCondZPhi_;
- 
-    if (A <= SMALL)
-        return;  // no-op when reaction coefficient is zero
- 
+
+    const bool react = (A > SMALL);
+
     forAllIters(*this, iter)
     {
         scalar& phi = iter().phi();
-        phi += deltaT * A * (1.0 - phi) * Foam::exp(Z * (phi - 1.0));
-        phi  = max(0.0, min(1.0, phi));
 
-	// For non-subset particles (omegaOU==0 always), phiModified = phi.
-        // For subset particles, updateOUProcess() recomputes phiModified
-        // as phi * exp(beta * omegaOU) immediately after this call.
+        if (react)
+        {
+            phi += deltaT * A * (1.0 - phi) * Foam::exp(Z * (phi - 1.0));
+            phi  = max(0.0, min(1.0, phi));
+        }
+
+        // Keep phiModified in step with phi for every particle that
+        // updateOUProcess() will not touch. This must happen even when the
+        // reaction is switched off: phi still changes through mixing, and a
+        // phiModified left at its injection value would silently become a
+        // stale conditioning coordinate for the coupling model.
         if (iter().secondCondFlag() != 1)
             iter().phiModified() = phi;
-
     }
 }
  
@@ -340,19 +344,24 @@ void Foam::MixingPopeCloud<CloudType>::updateOUProcess(const scalar deltaT)
     //      secondCondMixing().Smix() sees the current modified variable.
     const scalar beta  = secondCondBeta_;
     const scalar tauOU = secondCondTauOU_;
- 
-    if (tauOU <= SMALL)
-        return;
- 
+
+    // A non-positive tauOU freezes omega, but phiModified must still follow
+    // phi - otherwise the conditioning coordinate silently goes stale.
+    const bool advanceOU = (tauOU > SMALL);
+
     forAllIters(*this, iter)
     {
         if (iter().secondCondFlag() == 1)
         {
-            const scalar xi = this->rndGen_.Normal(0, 1);
-            iter().omegaOU() = OUStateUpdate
-            (
-                iter().omegaOU(), deltaT, tauOU, xi
-            );
+            if (advanceOU)
+            {
+                const scalar xi = this->rndGen_.Normal(0, 1);
+                iter().omegaOU() = OUStateUpdate
+                (
+                    iter().omegaOU(), deltaT, tauOU, xi
+                );
+            }
+
             iter().phiModified() =
                 iter().phi() * Foam::exp(beta * iter().omegaOU());
         }

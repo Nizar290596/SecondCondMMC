@@ -198,8 +198,11 @@ void Foam::MixingPopeParticle<ParticleType>::readFields
         }
     }
 
-    // Initialize the particle sampling
-    for (auto p : c)
+    // Initialize the particle sampling.
+    // Must bind by reference: nameVariableTable stores pointers to the
+    // particle's own members, so initialising a by-value copy populated a
+    // temporary that was destroyed at the end of each iteration.
+    for (auto& p : c)
     {
         p.initStatisticalSampling();
     }

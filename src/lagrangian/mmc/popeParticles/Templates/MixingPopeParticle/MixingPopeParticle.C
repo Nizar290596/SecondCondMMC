@@ -98,46 +98,10 @@ void Foam::MixingPopeParticle<ParticleType>::mixProperties
     MixingPopeParticle<ParticleType>& q,
     scalar mixExtent
 )
-{       
-    //ParticleType::mixProperties(p, q, mixExtent);
-
-//    const label fp = p.secondCondFlag();
-//    const label fq = q.secondCondFlag();
-
-    // S(φ): mix progress variable between the pair (same as other reactive
-    // scalars in MMCcurl — weighted pair mean with mixExtent relaxation)
-    //scalar phiAv = (p.wt() * p.phi() + q.wt() * q.phi()) / (p.wt() + q.wt());
-    //p.phi() = p.phi() + mixExtent * (phiAv - p.phi());
-    //q.phi() = q.phi() + mixExtent * (phiAv - q.phi());
-
-    // Recompute φ° for flagged particles: phi has changed, ω_OU has not
-    //    p.phiModified() = p.phi() * Foam::exp(secondCondBeta_s_ * p.omegaOU());
-    //    q.phiModified() = q.phi() * Foam::exp(secondCondBeta_s_ * q.omegaOU());
-//    if (fp == 0 && fq == 0)
-//    {
-        // Non-flagged pair: mix Y, T, hA via the parent chain.
-        // φ is left untouched (evolves only via W(φ) for these particles).
-//        ParticleType::mixProperties(p, q, mixExtent);
-//    }
-//    else if (fp == 1 && fq == 1)
-//    {
-        // Flagged pair: mix only φ here. Y, T, hA are mixed in step 5
-        // by secondCondMMCcurl on the 4-D (φ°, sP) reference space, so
-        // not mixing them here avoids double mixing of those scalars.
-//        const scalar wtSum = p.wt() + q.wt();
-//        if (wtSum > VSMALL)
-//        {
-//            const scalar phiAv = (p.wt()*p.phi() + q.wt()*q.phi())/wtSum;
-//            p.phi() += mixExtent * (phiAv - p.phi());
-//            q.phi() += mixExtent * (phiAv - q.phi());
-            // phiModified is refreshed at step 4 (updateOUProcess).
-//        }
-//    }
-
-     // Baseline first-conditioning composition mixing (mixes Y, hA, XiC via the
-    // parent chain) for all pairs. When second conditioning is enabled,
-    // MMCcurl::mixpair mixes only the progress variable phi instead and does
-    // not call this function.
+{
+    // Composition mixing. Which mixing stage calls this, and on which pairs,
+    // is decided by the selected mixing model - a stage that mixes a different
+    // property set (phiMMCcurl, secondCondMMCcurl) simply does not call it.
     ParticleType::mixProperties(p, q, mixExtent);
 }
 
@@ -150,39 +114,7 @@ void Foam::MixingPopeParticle<ParticleType>::mixProperties
     const scalar& mixExtent,
     const scalar& mixExtentSoot
 )
-{       
-    //ParticleType::mixProperties(p, q, mixExtent,mixExtentSoot);
-
-    // S(φ): mix progress variable between the pair (same as other reactive
-    // scalars in MMCcurl — weighted pair mean with mixExtent relaxation)
-    //scalar phiAv = (p.wt() * p.phi() + q.wt() * q.phi()) / (p.wt() + q.wt());
-    //p.phi() = p.phi() + mixExtent * (phiAv - p.phi());
-    //q.phi() = q.phi() + mixExtent * (phiAv - q.phi());
-
-    // Recompute φ° for flagged particles: phi has changed, ω_OU has not
-    //    p.phiModified() = p.phi() * Foam::exp(secondCondBeta_s_ * p.omegaOU());
-    //    q.phiModified() = q.phi() * Foam::exp(secondCondBeta_s_ * q.omegaOU());
-
-//    const label fp = p.secondCondFlag();
-//    const label fq = q.secondCondFlag();
-
-//    if (fp == 0 && fq == 0)
-//    {
-//        ParticleType::mixProperties(p, q, mixExtent, mixExtentSoot);
-//    }
-//    else if (fp == 1 && fq == 1)
-//    {
-//        const scalar wtSum = p.wt() + q.wt();
-//        if (wtSum > VSMALL)
-//        {
-//            const scalar phiAv = (p.wt()*p.phi() + q.wt()*q.phi())/wtSum;
-//            p.phi() += mixExtent * (phiAv - p.phi());
-//            q.phi() += mixExtent * (phiAv - q.phi());
-//        }
-//    }
-    // Baseline first-conditioning composition mixing (soot-aware variant).
-    // When second conditioning is enabled, MMCcurl::mixpair mixes only the
-    // progress variable phi instead and does not call this function.
+{
     ParticleType::mixProperties(p, q, mixExtent, mixExtentSoot);
 }
 
@@ -196,38 +128,6 @@ void Foam::MixingPopeParticle<ParticleType>::mixProperties
     scalarList ScaledExtent
 )
 {
-    //ParticleType::mixProperties(p, q, mixExtent,ScaledExtent);
-
-    // S(φ): mix progress variable between the pair (same as other reactive
-    // scalars in MMCcurl — weighted pair mean with mixExtent relaxation)
-//    scalar phiAv = (p.wt() * p.phi() + q.wt() * q.phi()) / (p.wt() + q.wt());
-//    p.phi() = p.phi() + mixExtent * (phiAv - p.phi());
-//    q.phi() = q.phi() + mixExtent * (phiAv - q.phi());
-
-    // Recompute φ° for flagged particles: phi has changed, ω_OU has not
-//        p.phiModified() = p.phi() * Foam::exp(secondCondBeta_s_ * p.omegaOU());
-//        q.phiModified() = q.phi() * Foam::exp(secondCondBeta_s_ * q.omegaOU());
-
-//    const label fp = p.secondCondFlag();
-//    const label fq = q.secondCondFlag();
-
-//    if (fp == 0 && fq == 0)
-//    {
-//        ParticleType::mixProperties(p, q, mixExtent, ScaledExtent);
-//    }
-//    else if (fp == 1 && fq == 1)
-//    {
-//        const scalar wtSum = p.wt() + q.wt();
-//        if (wtSum > VSMALL)
-//        {
-//            const scalar phiAv = (p.wt()*p.phi() + q.wt()*q.phi())/wtSum;
-//            p.phi() += mixExtent * (phiAv - p.phi());
-//            q.phi() += mixExtent * (phiAv - q.phi());
-//        }
-//    }
-     // Baseline first-conditioning composition mixing (scaled-extent variant).
-    // When second conditioning is enabled, MMCcurl::mixpair mixes only the
-    // progress variable phi instead and does not call this function.
     ParticleType::mixProperties(p, q, mixExtent, ScaledExtent);
 }
 
@@ -237,9 +137,6 @@ template<class CloudType>
 void Foam::MixingPopeParticle<ParticleType>::setStaticProperties(CloudType& c)
 {
     ParticleType::setStaticProperties(c);
-
-    // Cache β so mixProperties (which has no cloud ref) can recompute φ°
-    //secondCondBeta_s_ = c.secondCondBeta();
 
     if (c.mixing().numXiR())
     {

@@ -45,22 +45,36 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
     const mmcVarSet& Xi
 )
 :
+    mixParticleModel<CloudType>(dict, owner, type, Xi, orderedRefVarNames(Xi))
+{}
+
+
+template <class CloudType>
+Foam::mixParticleModel<CloudType>::mixParticleModel
+(
+    const dictionary& dict,
+    CloudType& owner,
+    const word& type,
+    const mmcVarSet& Xi,
+    const wordList& axisNames
+)
+:
     CloudMixingModel<CloudType>(dict,owner,type),
-  
+
     XiR_(Xi),
 
-    XiRNames_(Xi.rVarInXi().toc()),
-    
+    XiRNames_(orderedRefVarNames(Xi)),
+
     numXiR_(XiRNames_.size()),
-    
+
+    refAxisNames_(axisNames),
+
+    Xii_(getXiNormalisation(axisNames)),
+
     ri_(readScalar(this->coeffDict().lookup("r_i"))),
 
-    Xii_(getXiNormalisation()),
+    axisToRefVar_(mapAxesToRefVars(axisNames, XiRNames_)),
 
-//    fLow_(this->coeffDict().template lookupOrDefault<scalar>("fLow",-GREAT)),
-    
-//    fHigh_(this->coeffDict().template lookupOrDefault<scalar>("fHigh",GREAT)),
-    
     DEff_(owner.mesh().objectRegistry::lookupObject<volScalarField>("DEff")),
 
     D_(owner.mesh().objectRegistry::lookupObject<volScalarField>("D")),
@@ -102,20 +116,20 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
 )
 :
     CloudMixingModel<CloudType>(cm),
-    
+
     XiR_(cm.XiR_),
 
     XiRNames_(cm.XiRNames_),
-    
+
     numXiR_(XiRNames_.size()),
 
-    ri_(readScalar(this->coeffDict().lookup("r_i"))),
+    refAxisNames_(cm.refAxisNames_),
 
-    Xii_(getXiNormalisation()),
+    Xii_(cm.Xii_),
 
-//    fLow_(cm.fLow_),
-    
-//    fHigh_(cm.fHigh_),
+    ri_(cm.ri_),
+
+    axisToRefVar_(cm.axisToRefVar_),
 
     DEff_
     (
@@ -139,11 +153,16 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
         ("DeltaE")
     ),
 
+    // Must match the primary constructor: the registered viscosity field is
+    // the thermo one. A plain "mu" is created in createFields.H by copy and is
+    // therefore NOT in the object registry, so looking it up here aborted any
+    // clone() of a mixing model.
     mu_
     (
-        this->owner().mesh().objectRegistry::lookupObject<volScalarField>("mu")
+        this->owner().mesh().objectRegistry::lookupObject<volScalarField>
+        ("thermo:mu")
     ),
-    
+
     vb_(this->owner().mesh().objectRegistry::lookupObject<volScalarField>("vb")),
     
 
@@ -158,45 +177,48 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
 // * * * * * * * * * * * * * * * Member Functions  * * * * * * * * * * * * * //
 
 template <class CloudType>
-void Foam::mixParticleModel<CloudType>::buildParticleList
-(
-    //const scalar fLow,
-    //const scalar fHigh
-)
+void Foam::mixParticleModel<CloudType>::buildParticleList()
 {
     // ========================================================================
-    // Build local particleList
+    // Build the particle list for this mixing stage.
+    //
+    // The three virtual hooks below are the only things a derived stage needs
+    // to change. Everything else - the Eulerian interpolation, the parallel
+    // exchange, the pairing - is shared, so a stage that pairs in its own
+    // reference space still gets local, sub-volume and global pairing.
+    //
+    //   includeParticle()  which particles take part
+    //   referenceVector()  the coordinates the k-d tree splits on
+    //   reportPairing()    per-stage diagnostics, called at the end
+    // ========================================================================
 
+    // |grad Xi|^2 of every mmcVarSet reference variable, in XiRNames_ order.
+    // Only used by the Cleary & Klimenko (aISO false) time scale.
     PtrList<volScalarField> magSqr_XiR_(XiRNames_.size());
-    
-    label II = 0;
-    
-    for (const word& nameI : XiRNames_)
+
+    forAll(XiRNames_, refI)
     {
-		//Info << "XIRNAMES_ " << XiRNames_ <<endl;
-		//Info << "nameI: "<<nameI << endl;
         magSqr_XiR_.set
         (
-            II,
+            refI,
             new volScalarField
             (
-                magSqr(fvc::grad(this->XiR_.Vars(nameI).field()))
+                magSqr(fvc::grad(this->XiR_.Vars(XiRNames_[refI]).field()))
             )
         );
-        II++;
     }
-    
+
     PtrList<interpolationCellPoint<scalar> > magSqr_intp_(magSqr_XiR_.size());
-    
+
     forAll(magSqr_XiR_, vsfI)
-    {   
+    {
         magSqr_intp_.set
         (
             vsfI,
             new interpolationCellPoint<scalar>(magSqr_XiR_[vsfI])
         );
     }
-            
+
     interpolationCellPoint<scalar> DEff_intp_(this->DEff_);
 
     //for aISO
@@ -209,174 +231,25 @@ void Foam::mixParticleModel<CloudType>::buildParticleList
     interpolationCellPoint<scalar> mu_intp_(this->mu_);
 
     interpolationCellPoint<scalar> vb_intp_(this->vb_);
-    
-  
+
     // clear particle list from old data
     particleList_.clear();
-    
-    StochasticLib1 rand(time(0));
-    
+
     eulerianFieldDataList_.clear();
-    
+
+    particlePairs_.clear();
+
+    const label nDims = this->nRefDims();
+
+    scalarField xi(nDims, 0.0);
+
     // running index for particle position
     label particleInd=0;
-    
+
     forAllIters(this->owner(), iter)
     {
-        // Only add particle to the list if it is in the range of 
-        // flow to fMax
-        //if (iter().XiC().first() < fLow || iter().XiC().first() > fHigh)
-        //   continue;
-
-        // Asign pointer to particle to list of particles
-        particleList_.append
-        (
-            iter.get()
-        );
-        
-        // Store all eulerian fields 
-        eulerianFieldData eulerianFields;
-        
-        // Get the position, cell and face of the particle
-        const vector pos = iter().position();
-        const label cellI = iter().cell();
-        const label faceI = iter().face();
-        
-        eulerianFields.particleIndex() = particleInd++;
-        
-        eulerianFields.processorIndex() = Pstream::myProcNo();
-        
-        // The eulerian data field also has to store the position for the 
-        // k-d tree later
-        eulerianFields.position() = pos;
-        
-        // Also store the reference variable
-        eulerianFields.XiR() = iter().XiR();
-        
-        eulerianFields.Rand() = rand.Random();
-        
-        eulerianFields.DEff() = DEff_intp_.interpolate(pos,cellI,faceI);
-        
-        eulerianFields.D() = D_intp_.interpolate(pos,cellI,faceI);
-        
-        eulerianFields.Dt() = Dt_intp_.interpolate(pos,cellI,faceI);
-            
-        eulerianFields.DeltaE() = DeltaE_intp_.interpolate(pos,cellI,faceI);
-            
-        eulerianFields.mu() = mu_intp_.interpolate(pos,cellI,faceI);
-        
-        eulerianFields.vb() = vb_intp_.interpolate(pos,cellI,faceI);
-        eulerianFields.magSqrRefVar().resize(iter().XiR().size());
-        // Reference Variables & related quantitites 
-        forAll(iter().XiR(), j)
-        {
-			eulerianFields.XiR()[j] = iter().XiR()[j];
-            eulerianFields.magSqrRefVar()[j] = magSqr_intp_[j].interpolate
-            (
-                pos,cellI,faceI
-            );            
-        }
-            
-        eulerianFieldDataList_.append
-        (
-            std::move(eulerianFields)
-        );
-        
-    }
-    
-	
-    //if (eulerianFieldDataList_.size() < 2)
-    //{
-	//	Info<<"EulerianField Data List Cleared!"<<endl;
-    //    particlePairs_.clear();
-     //   return;
-    //}
-
-
-    // if run in parallel get all required particles of neighbouring processors
-    if 
-    (
-            Pstream::parRun() 
-         && pairingMethod_.method() != particlePairingMethod::localPairing
-    )
-    {
-        // findPairs is called in correctParticleListParallel
-        //Info << "Start CorrectParticleListParallel " << endl;
-        correctParticleListParallel();
-    }
-    else
-    {
-        findPairs(eulerianFieldDataList_,particlePairs_);   
-    }
-}
-
-
-/*template <class CloudType>
-void Foam::mixParticleModel<CloudType>::buildParticleListLocalMixing
-(
-    const scalar fLow,
-    const scalar fHigh
-)
-{
-    // ========================================================================
-    // Build local particleList
-
-    PtrList<volScalarField> magSqr_XiR_(XiRNames_.size());
-    
-    label II = 0;
-    
-    for (const word& nameI : XiRNames_)
-    {
-        magSqr_XiR_.set
-        (
-            II,
-            new volScalarField
-            (
-                magSqr(fvc::grad(this->XiR_.Vars(nameI).field()))
-            )
-        );
-        II++;
-    }
-    
-    PtrList<interpolationCellPoint<scalar> > magSqr_intp_(magSqr_XiR_.size());
-    
-    forAll(magSqr_XiR_, vsfI)
-    {   
-        magSqr_intp_.set
-        (
-            vsfI,
-            new interpolationCellPoint<scalar>(magSqr_XiR_[vsfI])
-        );
-    }
-            
-    interpolationCellPoint<scalar> DEff_intp_(this->DEff_);
-
-    //for aISO
-    interpolationCellPoint<scalar> D_intp_(this->D_);
-
-    interpolationCellPoint<scalar> Dt_intp_(this->Dt_);
-
-    interpolationCellPoint<scalar> DeltaE_intp_(this->DeltaE_);
-
-    interpolationCellPoint<scalar> mu_intp_(this->mu_);
-
-    interpolationCellPoint<scalar> vb_intp_(this->vb_);
-  
-    // clear particle list from old data
-    particleList_.clear();
-    
-    StochasticLib1 rand(time(0));
-    
-    eulerianFieldDataList_.clear();
-    
-    // running index for particle position
-    label particleInd=0;
-    
-    forAllIters(this->owner(), iter)
-    {
-        // Only add particle to the list if they are not already considered 
-        // in the parallel mixing
-        if (iter().XiC().first() >= fLow && iter().XiC().first() <= fHigh)
+        // Stage filter
+        if (!this->includeParticle(iter()))
             continue;
 
         // Asign pointer to particle to list of particles
@@ -384,64 +257,89 @@ void Foam::mixParticleModel<CloudType>::buildParticleListLocalMixing
         (
             iter.get()
         );
-        
-        // Store all eulerian fields 
+
+        // Store all eulerian fields
         eulerianFieldData eulerianFields;
-        
+
         // Get the position, cell and face of the particle
         const vector pos = iter().position();
         const label cellI = iter().cell();
         const label faceI = iter().face();
-        
+
         eulerianFields.particleIndex() = particleInd++;
-        
+
         eulerianFields.processorIndex() = Pstream::myProcNo();
-        Info << "eulFeildsProcIndx" << eulerianFields.processorIndex() << endl;
-        
-        // The eulerian data field also has to store the position for the 
+
+        // The eulerian data field also has to store the position for the
         // k-d tree later
         eulerianFields.position() = pos;
-        
-        // Also store the reference variable
-        eulerianFields.XiR() = iter().XiR();
-        
-        eulerianFields.Rand() = rand.Random();
-        
+
+        // This stage's reference-space coordinates, written in refAxisNames_
+        // order - the same order Xii_ was read in
+        this->referenceVector(iter(), xi);
+
+        eulerianFields.XiR() = xi;
+
+        // Rand() is only consumed by the dense particle models, which build
+        // their own lists; leave it defined but do not pay for an RNG here
+        eulerianFields.Rand() = 0.0;
+
         eulerianFields.DEff() = DEff_intp_.interpolate(pos,cellI,faceI);
-        
+
         eulerianFields.D() = D_intp_.interpolate(pos,cellI,faceI);
-        
+
         eulerianFields.Dt() = Dt_intp_.interpolate(pos,cellI,faceI);
-            
+
         eulerianFields.DeltaE() = DeltaE_intp_.interpolate(pos,cellI,faceI);
-            
+
         eulerianFields.mu() = mu_intp_.interpolate(pos,cellI,faceI);
+
         eulerianFields.vb() = vb_intp_.interpolate(pos,cellI,faceI);
-        
-        eulerianFields.magSqrRefVar().resize(iter().XiR().size());
-        // Reference Variables & related quantitites 
-        forAll(iter().XiR(), j)
+
+        // |grad Xi|^2 per pairing axis. Axes that are not mmcVarSet reference
+        // variables have no Eulerian field and stay at zero.
+        eulerianFields.magSqrRefVar().resize(nDims, 0.0);
+
+        forAll(axisToRefVar_, axisI)
         {
-            eulerianFields.magSqrRefVar()[j] = magSqr_intp_[j].interpolate
-            (
-                pos,cellI,faceI
-            );            
+            const label refI = axisToRefVar_[axisI];
+
+            if (refI >= 0)
+            {
+                eulerianFields.magSqrRefVar()[axisI] =
+                    magSqr_intp_[refI].interpolate(pos,cellI,faceI);
+            }
         }
-            
+
         eulerianFieldDataList_.append
         (
             std::move(eulerianFields)
         );
-    }
-    
-    if (eulerianFieldDataList_.size() < 2)
-    {
-        particlePairs_.clear();
-        return;
+
     }
 
-    particlePairAlgorithm_->findPairs(eulerianFieldDataList_,particlePairs_);
-}*/
+    // Note: no early return here even when this process holds fewer than two
+    // particles - correctParticleListParallel() is collective and every
+    // process must reach it. findPairs() handles a short list itself.
+
+    // if run in parallel get all required particles of neighbouring processors
+    if
+    (
+            Pstream::parRun()
+         && pairingMethod_.method() != particlePairingMethod::localPairing
+    )
+    {
+        // findPairs is called in correctParticleListParallel
+        correctParticleListParallel();
+    }
+    else
+    {
+        findPairs(eulerianFieldDataList_,particlePairs_);
+    }
+
+    this->reportPairing();
+}
+
 
 
 
@@ -692,15 +590,28 @@ void Foam::mixParticleModel<CloudType>::collectParticleData()
 template<class CloudType>
 void Foam::mixParticleModel<CloudType>::Smix()
 {
-    // First mix particles considered for local mixing
-    //buildParticleListLocalMixing(fLow_,fHigh_);
-    // Mix the particles
-    //SmixList();
-    // Now all particles for which parallel handling is considered
+    // Assemble this stage's particle list and pair it
     buildParticleList();
-    
+
     // Mix the list
     SmixList();
+}
+
+
+template <class CloudType>
+void Foam::mixParticleModel<CloudType>::referenceVector
+(
+    const particleType& p,
+    scalarField& xi
+) const
+{
+    // Default pairing space: the mmcVarSet reference variables. XiRNames_ is
+    // ordered by rVarInXiR() index, so component i of xi and Xii_[i] both
+    // refer to the same reference variable.
+    forAll(xi, i)
+    {
+        xi[i] = p.XiR()[i];
+    }
 }
 
 
@@ -718,10 +629,15 @@ Foam::mixParticleModel<CloudType>::getParticleMixingProcessors()
         return procList;
     }
 
-    // Only works for one reference variable 
-    if (numXiR_ > 1)
-        FatalError << "More than one reference variable selected."<<nl
-            << "Only particle pairing local and global are possible"
+    // Sub-volume construction is only defined for a one-dimensional pairing
+    // space (mixingSubVolumes takes a single normalisation factor). Test the
+    // dimension of THIS stage's space, not the mmcVarSet reference count.
+    if (Xii_.size() > 1)
+        FatalError << "Mixing model " << this->modelType() << " pairs in a "
+            << Xii_.size() << "-dimensional reference space ("
+            << refAxisNames_ << ")." << nl
+            << "pairingMethod subVolumes requires a single axis; use "
+            << "local or global instead."
             << exit(FatalError);
 
     
@@ -781,25 +697,111 @@ void Foam::mixParticleModel<CloudType>::SmixList()
 
 
 template <class CloudType>
-List<scalar> Foam::mixParticleModel<CloudType>::getXiNormalisation() 
+Foam::wordList
+Foam::mixParticleModel<CloudType>::orderedRefVarNames(const mmcVarSet& Xi)
 {
-    // dictionary to read the normalisation parameters for 
-    // the reference variables 
-    const dictionary XiDict(this->coeffDict().subDict("Xim_i"));
+    // rVarInXiR() maps a reference variable name to the index it occupies in
+    // the particle's XiR() array. Invert it, so that names[i] names XiR()[i].
+    //
+    // Do NOT use rVarInXi().toc() for this: HashTable::toc() returns keys in
+    // hash order, which has nothing to do with the index rVarInXiR() assigned,
+    // so any list built that way can pair a normalisation factor - or a
+    // |grad Xi|^2 field - with the wrong reference variable.
+    const HashTable<label, word>& refIndex = Xi.rVarInXiR();
 
-    Info << nl << "The Ximi parameters are: "<< XiDict << endl;
+    wordList names(refIndex.size());
 
-    List<scalar> Xii(numXiR_);
-
-    const HashTable<label, word>& XiRIndexes = this->XiR().rVarInXiR();
-
-    label i=0;
-    for (const word& refVarName :this->XiRNames())
+    forAllConstIters(refIndex, iter)
     {
-        Xii[i++] = readScalar(XiDict.lookup(refVarName+"_m"));
+        const label i = iter.val();
+
+        if (i < 0 || i >= names.size())
+        {
+            FatalErrorInFunction
+                << "Reference variable " << iter.key() << " has index " << i
+                << " which is out of range for " << names.size()
+                << " reference variables"
+                << exit(FatalError);
+        }
+
+        names[i] = iter.key();
     }
 
-	//Info << "Xii" << Xii << endl;
+    return names;
+}
+
+
+template <class CloudType>
+Foam::labelList Foam::mixParticleModel<CloudType>::mapAxesToRefVars
+(
+    const wordList& axisNames,
+    const wordList& refVarNames
+)
+{
+    labelList map(axisNames.size(), -1);
+
+    forAll(axisNames, axisI)
+    {
+        forAll(refVarNames, refI)
+        {
+            if (axisNames[axisI] == refVarNames[refI])
+            {
+                map[axisI] = refI;
+                break;
+            }
+        }
+    }
+
+    return map;
+}
+
+
+template <class CloudType>
+List<scalar> Foam::mixParticleModel<CloudType>::getXiNormalisation
+(
+    const wordList& axisNames
+) const
+{
+    // Normalisation factors for this stage's own pairing axes, read from this
+    // stage's own coeffDict - so each mixing stage is configured entirely
+    // within its own <model>Coeffs sub-dictionary.
+    const dictionary XiDict(this->coeffDict().subDict("Xim_i"));
+
+    Info << nl << "The Xim_i parameters of " << this->modelType()
+         << " are: " << XiDict << endl;
+
+    if (axisNames.empty())
+    {
+        FatalErrorInFunction
+            << "Mixing model " << this->modelType() << " has no pairing axes."
+            << nl
+            << "At least one reference variable, or an explicit referenceAxes "
+            << "entry, is required."
+            << exit(FatalError);
+    }
+
+    List<scalar> Xii(axisNames.size());
+
+    // Indexed by position in axisNames, which is also the order that
+    // referenceVector() writes its components - so Xii[i] always normalises
+    // component i and the two can never drift apart.
+    forAll(axisNames, i)
+    {
+        const word key(axisNames[i] + "_m");
+
+        if (!XiDict.found(key))
+        {
+            FatalErrorInFunction
+                << "Missing normalisation factor " << key << " in "
+                << this->modelType() << "Coeffs/Xim_i" << nl
+                << "One entry is required per pairing axis. This model pairs "
+                << "on: " << axisNames
+                << exit(FatalError);
+        }
+
+        Xii[i] = readScalar(XiDict.lookup(key));
+    }
+
     return Xii;
 }
 
@@ -816,6 +818,19 @@ void Foam::mixParticleModel<CloudType>::findPairs
     // Reset the per-axis split-counter (one slot per XiR axis)
     splitAxisHistogram_.setSize(Xii_.size());
     splitAxisHistogram_ = 0;
+
+    // A list of fewer than two particles has no pair to form. Without this the
+    // loop below still reads pInd[0] and pInd[1]: KkdTreeLikeSearch() takes its
+    // base-case branch immediately and pushes L=1, U=size, which the consumer
+    // reads as the pair (pInd[0], pInd[1]) regardless of how long pInd is.
+    // Empty and single-particle lists are routine for a stage that pairs a
+    // subset of the cloud on one process.
+    //
+    // This guard belongs here rather than in buildParticleList(): returning
+    // early from there would skip correctParticleListParallel(), which is
+    // collective, and deadlock every other process.
+    if (eulerianFieldList.size() < 2)
+        return;
 
     // Keeping track of indices for premixedkdTreeLikeSearch
     std::vector<label> L;

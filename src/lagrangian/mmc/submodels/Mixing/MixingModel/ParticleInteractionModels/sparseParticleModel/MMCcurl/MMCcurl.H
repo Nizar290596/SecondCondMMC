@@ -77,7 +77,25 @@ class MMCcurl
         //- true: harmonic mean of two particle mixing time scale
         //- false: min of two particle mixing time scale
         const Switch meanTimeScale_;
-    
+
+    protected:
+
+        //- Apply the pair mixing action once the extent is known.
+        //  Split out of mixpair() so that a stage which mixes a different set
+        //  of properties (see phiMMCcurl) is a separate, independently
+        //  selected and independently configured mixing model instead of a
+        //  branch inside this one.
+        virtual void mixPairProperties
+        (
+            particleType& p,
+            const eulerianFieldData& pEulerianFields,
+            particleType& q,
+            const eulerianFieldData& qEulerianFields,
+            const scalar mixExtent,
+            const scalar tauMix,
+            const scalar deltaT
+        );
+
     public:
 
         //- Runtime type information

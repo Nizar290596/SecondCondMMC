@@ -149,6 +149,39 @@ const scalar& Foam::nameVariableTable::get(const word& varName) const
 }
 
 
+bool Foam::nameVariableTable::found(const word& varName) const
+{
+    return nameIndexMap_.find(varName) != nameIndexMap_.end();
+}
+
+
+Foam::label Foam::nameVariableTable::indexOf(const word& varName) const
+{
+    auto it = nameIndexMap_.find(varName);
+
+    if (it == nameIndexMap_.end())
+        return -1;
+
+    return label(*it);
+}
+
+
+const Foam::scalar& Foam::nameVariableTable::get(const label ind) const
+{
+    static const scalar zero_ = 0.0;
+
+    if (ind < 0 || size_t(ind) >= varPointers_.size())
+        return zero_;
+
+    const scalar* ptr = varPointers_[ind];
+
+    if (ptr == nullptr)
+        return zero_;
+
+    return *ptr;
+}
+
+
 Foam::wordList Foam::nameVariableTable::getAllVarNames() const
 {
     List<word> varNames(nameIndexMap_.size());
