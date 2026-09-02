@@ -759,12 +759,34 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
              << Yindexes_ << endl;
     Info << "maximum rMax is: " << rMaxMax_ << endl;
 
+    // Conditioning axis for THIS model, read from this model's own
+    // coefficients sub-dictionary.
+    //
+    // It must NOT be taken from thermophysicalCoupling/condVariable: that entry
+    // has a second consumer. ReactingPopeParticle::calc() and FlameletCurves
+    // use it as the NAME OF THE COUPLING VARIABLE to look up on the particle
+    // (XiC(cVarName)) and hand to the reaction model as the mixture fraction,
+    // so it has to stay the name of a registered coupling variable such as z.
+    // Setting it to phiModified aborted tracking with
+    //   phiModified not found in table. Valid entries: 1(z)
+    //
+    // Defaults to thermophysicalCoupling/condVariable, so a set-up that does
+    // not use phi-degree conditioning behaves exactly as before.
+    const word condVar
+    (
+        this->coeffDict().template lookupOrDefault<word>
+        (
+            "condVariable",
+            this->cVarName()
+        )
+    );
+
     // Optional conditioning on the modified progress variable phi-degree.
     // phi-degree (phiModified) is a particle-only quantity with no Eulerian
     // field, so the first registered coupling variable's array slot is reused
     // as the carrier for the conditioning value and a per-cell phi-degree is
     // projected from the flagged particles each step (buildPhiModCell()).
-    phiModEnabled_ = (this->cVarName() == "phiModified");
+    phiModEnabled_ = (condVar == "phiModified");
 
     if (phiModEnabled_ && this->XiCNames().empty())
         FatalErrorInFunction
@@ -773,7 +795,18 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
             << exit(FatalError);
 
     const word condName =
-        phiModEnabled_ ? this->XiCNames()[0] : this->cVarName();
+        phiModEnabled_ ? this->XiCNames()[0] : condVar;
+
+    if (!phiModEnabled_ && !this->XiC().cVarInXiC().found(condName))
+    {
+        FatalErrorInFunction
+            << "condVariable " << condName << " selected for "
+            << this->modelType() << " is not a registered coupling variable."
+            << nl << "Registered coupling variables: " << this->XiCNames()
+            << nl << "Use one of those, or 'phiModified' to condition on the "
+            << "modified progress variable."
+            << exit(FatalError);
+    }
 
     condSlotXiC_ = this->XiC().cVarInXiC()[condName];
     condSlotXi_  = this->XiC().cVarInXi()[condName];

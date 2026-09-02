@@ -157,8 +157,15 @@ subModels
         nNearest            20;     // number of nearest neighbours per kernel (default 20)
         rMax                1.0e9;  // cap on the physical kernel radius
 
-        // NOTE: the conditioning variable is NOT set here. It is read from
-        // thermophysicalCoupling/condVariable below.
+        // Conditioning axis for the kernel estimator. Defaults to
+        // thermophysicalCoupling/condVariable if omitted. Set it to
+        // phiModified to condition on the modified progress variable; any
+        // other value must name a registered coupling variable.
+        //
+        // Do NOT put phiModified in thermophysicalCoupling/condVariable:
+        // that entry is also handed to the reaction model as the name of the
+        // mixture-fraction coupling variable and must stay z.
+        condVariable        phiModified;
     }
 
 
@@ -308,7 +315,11 @@ thermophysicalCoupling
     OH;
     AR;
 
-    primarySpecies     CO2;
+    // The coupling variable passed to the reaction model as the mixture
+    // fraction. Must name a registered coupling variable - it is looked up as
+    // XiC(condVariable) in ReactingPopeParticle::calc(). To condition a
+    // coupling model on something else, use that model's own condVariable
+    // entry (see KernelEstimationCoeffs).
     condVariable         z;
 
     // The blending of the relaxation timescale allows 

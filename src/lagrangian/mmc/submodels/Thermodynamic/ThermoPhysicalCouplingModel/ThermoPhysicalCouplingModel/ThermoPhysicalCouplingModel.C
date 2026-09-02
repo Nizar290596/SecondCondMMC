@@ -49,7 +49,29 @@ void Foam::ThermoPhysicalCouplingModel<CloudType>::setThermoPhysicalCoupling()
     }
 
     couplingDict.lookup("condVariable") >> cVarName_;
-    
+
+    // This entry is consumed as XiC(cVarName_) by ReactingPopeParticle::calc()
+    // and by FlameletCurves - it is the coupling variable handed to the
+    // reaction model as the mixture fraction. It must therefore name a
+    // registered coupling variable. Check it here: otherwise the first offence
+    // is a HashTable::at() abort part-way through particle tracking, on one
+    // arbitrary rank, long after start-up.
+    //
+    // To condition a coupling model on something else (e.g. the modified
+    // progress variable), set condVariable in that model's own coefficients
+    // sub-dictionary instead - see KernelEstimation.
+    if (!XiC_.cVarInXiC().found(cVarName_))
+    {
+        FatalErrorInFunction
+            << "thermophysicalCoupling/condVariable is " << cVarName_
+            << ", which is not a registered coupling variable." << nl
+            << "Registered coupling variables: " << XiCNames_ << nl
+            << "This entry names the coupling variable passed to the reaction "
+            << "model as the mixture fraction, so it must be one of those."
+            << exit(FatalError);
+    }
+
+
     tauRelaxBlending_ = couplingDict.lookupOrDefault<Switch>("tauRelaxBlending",false);
 
     const scalar tauTmpTarget(readScalar(couplingDict.lookup("tauRelax")));
