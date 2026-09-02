@@ -380,9 +380,22 @@ void Foam::MixingPopeCloud<CloudType>::setParticleProperties
     const bool& iniRls
 )
 {
-    CloudType::setParticleProperties(particle, mass, wt, patchI, patchFace,iniRls);    
-    
-    /*if 
+    CloudType::setParticleProperties(particle, mass, wt, patchI, patchFace,iniRls);
+
+    // Set static properties if unset - mirrors the equivalent block in
+    // ThermoPopeCloud::setParticleProperties.
+    //
+    // This has to happen here, not only in
+    // basicReactingPopeParticle::setStaticProperties(), because the initial
+    // particle release runs inside the cloud constructor while that explicit
+    // call comes afterwards (createParticles.H). Without it XiRNames_ is still
+    // empty when the first particles are created, so the
+    //     if (XiRNames_.size() == XiR_.size())
+    // guard in MixingPopeParticle::initStatisticalSampling() is false and the
+    // reference variables never get registered in the particle's
+    // nameVariableTable - only to reappear after a restart, where
+    // readFields() sets the statics before sizing XiR_.
+    if
     (
         particleType::indexInXiR_.empty()
      && particleType::XiRNames_.empty()
@@ -390,8 +403,7 @@ void Foam::MixingPopeCloud<CloudType>::setParticleProperties
     {
         particleType::indexInXiR_ = mixing().XiR().rVarInXiR();
         particleType::XiRNames_   = mixing().XiRNames();
-    }*/
-
+    }
 
     particle.dx() = 0;
 
