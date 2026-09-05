@@ -28,6 +28,7 @@ License
 
 #include "OSspecific.H"
 #include <fstream>
+#include <string>
 
 // * * * * * * * * * * * * * Private Member Functions  * * * * * * * * * * * //
 
@@ -638,20 +639,37 @@ void Foam::secondCondMMCcurl<CloudType>::writePairSamples
     }
 
     // Which axes went into each distance column
-    wordList refAxes;
+    DynamicList<word> refAxes;
     forAll(axes, i)
     {
         if (axes[i] != "phiModified") refAxes.append(axes[i]);
     }
 
+    // Foam containers have no operator<< for std::ostream - only for
+    // Foam::Ostream - so flatten the axis names into a plain string. A single
+    // word is fine as-is, since word derives from std::string.
+    auto joinNames = [](const UList<word>& names)
+    {
+        std::string joined;
+
+        forAll(names, i)
+        {
+            if (i) joined += ' ';
+            joined += names[i];
+        }
+
+        return joined;
+    };
+
     os << "# " << this->modelType() << " second-conditioning pair samples\n"
        << "# time            " << runTime.timeName() << "\n"
-       << "# pairing axes    " << axes << "\n"
+       << "# pairing axes    " << joinNames(axes) << "\n"
        << "# sampled         " << nRows << " of " << nCouplesGlobal
        << " couples globally (target " << nPairSamples_ << ")\n"
        << "#\n"
        << "# dPhiMod   |difference| on the phiModified axis\n"
-       << "# dShadow   Euclidean |difference| over " << refAxes << "\n"
+       << "# dShadow   Euclidean |difference| over " << joinNames(refAxes)
+       << "\n"
        << "# dPhys     |difference| in physical space [m]\n"
        << "# T_*_pre   temperature as the couple was paired [K]\n"
        << "# T_*_post  temperature after mixSpeciesOnly [K]\n"
