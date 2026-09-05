@@ -743,8 +743,20 @@ void Foam::secondCondMMCcurl<CloudType>::printInfo()
         << token::TAB << "CE:              " << CE_ << nl
         << token::TAB << "meanTimeScale:   " << meanTimeScale_ << nl
         << token::TAB << "Mixes:           Y, T, hA  (NOT phi, XiR, XiC, "
-        << "secondCondFlag)"
-        << endl;
+        << "secondCondFlag)" << nl
+        << token::TAB << "Pair log:        ";
+
+    if (nPairSamples_ > 0)
+    {
+        Info<< "up to " << nPairSamples_
+            << " couples per write time -> postProcessing/secondCondPairs/"
+            << endl;
+    }
+    else
+    {
+        Info<< "off (set nPairSamples in " << this->modelType()
+            << "Coeffs to enable)" << endl;
+    }
 }
 
 
