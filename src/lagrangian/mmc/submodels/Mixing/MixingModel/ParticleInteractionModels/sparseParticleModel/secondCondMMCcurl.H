@@ -92,9 +92,22 @@ Description
             CE              0.1;
             CL              0.5;
             meanTimeScale   true;
+
+            // Diagnostic: sample this many paired couples at each write time
+            // into postProcessing/secondCondPairs/secondCondPairs_<time>.dat.
+            // 0 (default) writes nothing. The count is global, not per rank.
+            nPairSamples    1000;
         }
     }
     \endverbatim
+
+    The pair log records, per sampled couple: the owning process, both
+    particles' secondCondFlag, both phiModified values and their separation,
+    the separation over the remaining reference axes (the shadow position for
+    the default axis set), the physical separation, and both temperatures
+    before and after the mixing. Note that with particleFilter secondCondFlag
+    every sampled particle is by construction flagged, so the two flag columns
+    only carry information when particleFilter is none.
 
     Note on dictionary keys: the normalisation entry for the progress variable
     is keyed by its axis name, so it is "phiModified_m" and not "phiMod_m".
@@ -152,6 +165,10 @@ class secondCondMMCcurl
         //  index is shared by every particle of the cloud.
         mutable labelList axisTableIndex_;
 
+        //- Target number of paired couples to sample into the per-write-time
+        //  pair log. 0 (default) disables the log entirely.
+        const label nPairSamples_;
+
 
     // Private member functions
 
@@ -192,6 +209,20 @@ protected:
 
         //- Particle counts, split-axis histogram and pair separations
         virtual void reportPairing() const override;
+
+        //- Mix the paired list, optionally sampling couples into the pair log.
+        //  Overridden rather than hooked because the log records temperatures
+        //  both before and after the mixing, so it has to bracket the base
+        //  implementation.
+        virtual void SmixList() override;
+
+        //- Gather the sampled rows and write this write time's pair log
+        void writePairSamples
+        (
+            const List<scalar>& rows,
+            const label nCols,
+            const label nCouplesGlobal
+        ) const;
 
 
 public:

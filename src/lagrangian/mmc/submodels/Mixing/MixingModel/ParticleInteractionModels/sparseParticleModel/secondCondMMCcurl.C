@@ -149,7 +149,12 @@ Foam::secondCondMMCcurl<CloudType>::secondCondMMCcurl
 
     filterOnFlag_(particleFilter_ == "secondCondFlag"),
 
-    axisTableIndex_()
+    axisTableIndex_(),
+
+    nPairSamples_
+    (
+        this->coeffDict().template lookupOrDefault<label>("nPairSamples", 0)
+    )
 {
     if (particleFilter_ != "secondCondFlag" && particleFilter_ != "none")
     {
@@ -175,7 +180,8 @@ Foam::secondCondMMCcurl<CloudType>::secondCondMMCcurl
     meanTimeScale_(cm.meanTimeScale_),
     particleFilter_(cm.particleFilter_),
     filterOnFlag_(cm.filterOnFlag_),
-    axisTableIndex_(cm.axisTableIndex_)
+    axisTableIndex_(cm.axisTableIndex_),
+    nPairSamples_(cm.nPairSamples_)
 {}
 
 
@@ -457,6 +463,225 @@ void Foam::secondCondMMCcurl<CloudType>::reportPairing() const
             os << '\t' << totalSplits << '\n';
         }
     }
+}
+
+
+template<class CloudType>
+void Foam::secondCondMMCcurl<CloudType>::SmixList()
+{
+    const Time& runTime = this->owner().mesh().time();
+
+    // Nothing to sample: behave exactly like the base model.
+    // Both conditions are uniform across processes, so the collective calls
+    // further down are reached by every rank or by none.
+    if (nPairSamples_ <= 0 || !runTime.writeTime())
+    {
+        mixParticleModel<CloudType>::SmixList();
+        return;
+    }
+
+    // Number of scalars per logged row - keep in step with writePairSamples()
+    const label nCols = 12;
+
+    // ---- 1. enumerate the couples that will actually be mixed --------------
+    // A group of three is mixed as two overlapping couples, (0,1) then (1,2),
+    // so the unit of interest is the couple, not the group. Couples with a
+    // remote member are skipped: they are mixed on the other rank too, and the
+    // copy held here is discarded, so its post-mix temperature is meaningless.
+    DynamicList<label> coupleP;
+    DynamicList<label> coupleQ;
+
+    for (const List<label>& pr : this->particlePairs_)
+    {
+        for (label k = 1; k < pr.size(); ++k)
+        {
+            const eulerianFieldData& a = this->eulerianFieldDataList_[pr[k-1]];
+            const eulerianFieldData& b = this->eulerianFieldDataList_[pr[k]];
+
+            if (a.local() && b.local())
+            {
+                coupleP.append(pr[k-1]);
+                coupleQ.append(pr[k]);
+            }
+        }
+    }
+
+    label nCouplesGlobal = coupleP.size();
+    reduce(nCouplesGlobal, sumOp<label>());
+
+    // Uniform sampling probability, so every couple in the run has the same
+    // chance of being logged regardless of which rank holds it.
+    const scalar pSample =
+        (nCouplesGlobal > 0)
+      ? min(1.0, scalar(nPairSamples_)/scalar(nCouplesGlobal))
+      : 0.0;
+
+    labelList sampleP(coupleP.size());
+    labelList sampleQ(coupleQ.size());
+    label nSampled = 0;
+
+    forAll(coupleP, i)
+    {
+        if (this->owner().rndGen().Random() < pSample)
+        {
+            sampleP[nSampled] = coupleP[i];
+            sampleQ[nSampled] = coupleQ[i];
+            nSampled++;
+        }
+    }
+
+    sampleP.setSize(nSampled);
+    sampleQ.setSize(nSampled);
+
+    // ---- 2. state before mixing --------------------------------------------
+    const wordList& axes = this->refAxisNames();
+
+    label iPhi = -1;
+    forAll(axes, i)
+    {
+        if (axes[i] == "phiModified") iPhi = i;
+    }
+
+    List<scalar> rows(nCols*nSampled, 0.0);
+
+    forAll(sampleP, s)
+    {
+        const eulerianFieldData& ea = this->eulerianFieldDataList_[sampleP[s]];
+        const eulerianFieldData& eb = this->eulerianFieldDataList_[sampleQ[s]];
+
+        const particleType& pa = this->particleList_[ea.particleIndex()];
+        const particleType& pb = this->particleList_[eb.particleIndex()];
+
+        // Separation on the progress-variable axis, and over the remaining
+        // reference axes (the shadow position for the default axis set)
+        const scalar phiA = (iPhi >= 0) ? ea.XiR()[iPhi] : 0.0;
+        const scalar phiB = (iPhi >= 0) ? eb.XiR()[iPhi] : 0.0;
+
+        scalar dRefSqr = 0.0;
+        forAll(axes, i)
+        {
+            if (i != iPhi) dRefSqr += sqr(ea.XiR()[i] - eb.XiR()[i]);
+        }
+
+        const label r = s*nCols;
+
+        rows[r + 0] = scalar(Pstream::myProcNo());
+        rows[r + 1] = scalar(pa.secondCondFlag());
+        rows[r + 2] = scalar(pb.secondCondFlag());
+        rows[r + 3] = phiA;
+        rows[r + 4] = phiB;
+        rows[r + 5] = mag(phiA - phiB);
+        rows[r + 6] = Foam::sqrt(dRefSqr);
+        rows[r + 7] = mag(ea.position() - eb.position());
+        rows[r + 8] = pa.T();
+        rows[r + 9] = pb.T();
+        // columns 10, 11 are the post-mix temperatures, filled below
+    }
+
+    // ---- 3. the mixing itself ----------------------------------------------
+    mixParticleModel<CloudType>::SmixList();
+
+    // ---- 4. state after mixing ---------------------------------------------
+    forAll(sampleP, s)
+    {
+        const eulerianFieldData& ea = this->eulerianFieldDataList_[sampleP[s]];
+        const eulerianFieldData& eb = this->eulerianFieldDataList_[sampleQ[s]];
+
+        const particleType& pa = this->particleList_[ea.particleIndex()];
+        const particleType& pb = this->particleList_[eb.particleIndex()];
+
+        rows[s*nCols + 10] = pa.T();
+        rows[s*nCols + 11] = pb.T();
+    }
+
+    writePairSamples(rows, nCols, nCouplesGlobal);
+}
+
+
+template<class CloudType>
+void Foam::secondCondMMCcurl<CloudType>::writePairSamples
+(
+    const List<scalar>& rows,
+    const label nCols,
+    const label nCouplesGlobal
+) const
+{
+    const Time& runTime = this->owner().mesh().time();
+
+    // Collective: every rank contributes its rows, the master writes one file
+    List<List<scalar>> allRows(Pstream::nProcs());
+    allRows[Pstream::myProcNo()] = rows;
+    Pstream::gatherList(allRows);
+
+    if (!Pstream::master()) return;
+
+    const wordList& axes = this->refAxisNames();
+
+    label nRows = 0;
+    forAll(allRows, i) nRows += allRows[i].size()/nCols;
+
+    const fileName dir =
+        runTime.globalPath()/"postProcessing"/"secondCondPairs";
+
+    mkDir(dir);
+
+    const fileName fName =
+        dir/("secondCondPairs_" + runTime.timeName() + ".dat");
+
+    std::ofstream os(fName.c_str());
+
+    if (!os.is_open())
+    {
+        WarningInFunction
+            << "Could not open " << fName << " for writing" << endl;
+        return;
+    }
+
+    // Which axes went into each distance column
+    wordList refAxes;
+    forAll(axes, i)
+    {
+        if (axes[i] != "phiModified") refAxes.append(axes[i]);
+    }
+
+    os << "# " << this->modelType() << " second-conditioning pair samples\n"
+       << "# time            " << runTime.timeName() << "\n"
+       << "# pairing axes    " << axes << "\n"
+       << "# sampled         " << nRows << " of " << nCouplesGlobal
+       << " couples globally (target " << nPairSamples_ << ")\n"
+       << "#\n"
+       << "# dPhiMod   |difference| on the phiModified axis\n"
+       << "# dShadow   Euclidean |difference| over " << refAxes << "\n"
+       << "# dPhys     |difference| in physical space [m]\n"
+       << "# T_*_pre   temperature as the couple was paired [K]\n"
+       << "# T_*_post  temperature after mixSpeciesOnly [K]\n"
+       << "# flag_*    secondCondFlag; always 1 while particleFilter is"
+       << " secondCondFlag\n"
+       << "#\n"
+       << "# proc\tflag_p\tflag_q\tphiMod_p\tphiMod_q\tdPhiMod\tdShadow"
+       << "\tdPhys\tT_p_pre\tT_q_pre\tT_p_post\tT_q_post\n";
+
+    os.setf(std::ios::scientific);
+    os.precision(6);
+
+    forAll(allRows, procI)
+    {
+        const List<scalar>& r = allRows[procI];
+
+        for (label i = 0; i + nCols <= r.size(); i += nCols)
+        {
+            os << label(r[i]) << '\t'
+               << label(r[i+1]) << '\t'
+               << label(r[i+2]);
+
+            for (label c = 3; c < nCols; ++c) os << '\t' << r[i+c];
+
+            os << '\n';
+        }
+    }
+
+    Info<< "[" << this->modelType() << "] wrote " << nRows
+        << " pair samples to " << fName << endl;
 }
 
 

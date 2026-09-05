@@ -288,6 +288,15 @@ secondConditioning
 //         meanTimeScale   true;
 //         CL              0.5;
 //         CE              0.1;
+//
+//         // Diagnostic pair log. Samples this many paired couples (globally,
+//         // not per rank) at each write time and writes them to
+//         //   postProcessing/secondCondPairs/secondCondPairs_<time>.dat
+//         // Columns: proc, both secondCondFlags, both phiModified values and
+//         // their separation, the separation over the remaining reference
+//         // axes, the physical separation, and both temperatures before and
+//         // after the mixing. 0 (default) disables it.
+//         nPairSamples    1000;
 //     }
 
 
