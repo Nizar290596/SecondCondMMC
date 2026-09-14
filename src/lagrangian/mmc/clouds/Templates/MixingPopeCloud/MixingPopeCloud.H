@@ -130,6 +130,13 @@ class MixingPopeCloud
 
     // Protected Member Functions
 
+        //- Names of the second-conditioning particle attributes that can be
+        //  requested in the eulerianStatistics sub-dictionary. Listing any of
+        //  them there makes the solver accumulate its average, square average,
+        //  variance, standard deviation and weight, exactly as for the species
+        //  and the mixing distances.
+        static const wordList& secondCondStatNames();
+
         //- Set cloud sub-models
         void setModels(const mmcVarSet& Xi);
 

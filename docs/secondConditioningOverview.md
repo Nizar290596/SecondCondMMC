@@ -671,6 +671,24 @@ subModels
     }
 }
 
+eulerianStatistics
+{
+    enabled   true;
+    axisymmetric false;
+
+    T; CO2; CH4;          // existing entries
+    dx; dsPx; dsPy; dsPz; // mixing distances
+
+    // Second-conditioning attributes. Each listed name produces five
+    // AUTO_WRITE volScalarFields: <name>Av, <name>SqrAv, <name>Var,
+    // <name>StdDev and <name>wt. Accumulated over ALL particles, so
+    // secondCondFlagAv is the locally realised subset fraction R.
+    secondCondFlag;
+    omegaOU;
+    phi;                  // registers phiAv etc., never a bare 'phi'
+    phiModified;
+}
+
 thermophysicalCoupling
 {
     CH4; O2; N2; CO2; H2O; CO; OH;      // species carried by the coupling

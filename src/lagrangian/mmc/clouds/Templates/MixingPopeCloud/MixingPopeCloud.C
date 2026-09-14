@@ -31,6 +31,27 @@ License
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
 template<class CloudType>
+const Foam::wordList& Foam::MixingPopeCloud<CloudType>::secondCondStatNames()
+{
+    // Single source of truth for setEulerianStatistics() and
+    // updateEulerianStatistics(), so a name can never be registered without
+    // being accumulated, or vice versa.
+    static wordList names;
+
+    if (names.empty())
+    {
+        names.setSize(4);
+        names[0] = "secondCondFlag";
+        names[1] = "omegaOU";
+        names[2] = "phi";
+        names[3] = "phiModified";
+    }
+
+    return names;
+}
+
+
+template<class CloudType>
 void Foam::MixingPopeCloud<CloudType>::setModels(const mmcVarSet& Xi)
 {
     mixingModel_.reset
@@ -539,12 +560,29 @@ void Foam::MixingPopeCloud<CloudType>::setEulerianStatistics()
     forAll(this->mixing().XiRNames(),XiRI)
     {
         word refVarName = "d" + mixing().XiRNames()[XiRI];
-        
+
         if (this->eulerianStatsDict().found(refVarName))
         {
-            const dimensionSet dim = dimless;// they will be considered dimless 
-            
-            this->eulerianStats().newProperty(refVarName,dim);   
+            const dimensionSet dim = dimless;// they will be considered dimless
+
+            this->eulerianStats().newProperty(refVarName,dim);
+        }
+    }
+
+    //- Statistics of the second-conditioning particle attributes.
+    //  All four are dimensionless: secondCondFlag is 0 or 1, omegaOU is the
+    //  standardised OU state, and phi / phiModified are progress variables.
+    //  Registering a property creates its Av, SqrAv, Var, StdDev and weight
+    //  accumulator fields, exactly as for the species and mixing distances.
+    forAll(secondCondStatNames(), i)
+    {
+        const word& name = secondCondStatNames()[i];
+
+        if (this->eulerianStatsDict().found(name))
+        {
+            const dimensionSet dim = dimless;
+
+            this->eulerianStats().newProperty(name,dim);
         }
     }
 }
@@ -555,22 +593,56 @@ void Foam::MixingPopeCloud<CloudType>::updateEulerianStatistics()
 {
     CloudType::updateEulerianStatistics();
 
+    // Hoist the dictionary look-ups for the second-conditioning attributes out
+    // of the particle loop: with O(10^5) particles per rank these would
+    // otherwise be repeated once per particle per quantity, every time step.
+    const bool doFlag = this->eulerianStatsDict().found("secondCondFlag");
+    const bool doOmega = this->eulerianStatsDict().found("omegaOU");
+    const bool doPhi = this->eulerianStatsDict().found("phi");
+    const bool doPhiMod = this->eulerianStatsDict().found("phiModified");
+
     forAllIters(*this, iter)
     {
         this->eulerianStats().findCell(iter().position());
 
-        //- statistics of distance for reference variables 
+        //- statistics of distance for reference variables
         forAll(mixing().XiRNames(),XiRI)
         {
             const word& refVarName = mixing().XiRNames()[XiRI];
             const word& dRefVarName = "d" + refVarName;
-            
+
             if (this->eulerianStatsDict().found(dRefVarName))
                 this->eulerianStats().calculate(dRefVarName,iter().wt(),iter().dXiR(refVarName));
         }
-            
+
         if (this->eulerianStatsDict().found("dx"))
             this->eulerianStats().calculate("dx",iter().wt(),iter().dx());
+
+        //- Second-conditioning attributes.
+        //  Accumulated over ALL particles, as dx and the mixing distances are,
+        //  so that the mean of secondCondFlag is the locally realised subset
+        //  fraction R. Note that omegaOU is identically zero and phiModified
+        //  equals phi for unflagged particles, so those two means are diluted
+        //  by the (1 - R) unflagged population.
+        const scalar wt = iter().wt();
+
+        if (doFlag)
+            this->eulerianStats().calculate
+            (
+                "secondCondFlag", wt, scalar(iter().secondCondFlag())
+            );
+
+        if (doOmega)
+            this->eulerianStats().calculate("omegaOU", wt, iter().omegaOU());
+
+        if (doPhi)
+            this->eulerianStats().calculate("phi", wt, iter().phi());
+
+        if (doPhiMod)
+            this->eulerianStats().calculate
+            (
+                "phiModified", wt, iter().phiModified()
+            );
     }
 }
 
