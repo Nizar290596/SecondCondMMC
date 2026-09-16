@@ -220,8 +220,9 @@ void Foam::MMCcurl<CloudType>::mixpair
                 // reaction progress variable phi, for every pair (no flagged/
                 // unflagged distinction). Composition (Y, hA, XiC) is NOT mixed
                 // here; the flagged subset mixes Y/T/hA later in second
-                // conditioning. phi is reacted afterwards by W(phi) and is mixed
-                // nowhere else.
+                // conditioning. This is the only place phi is mixed; afterwards
+                // it is relaxed towards the Eulerian progress variable c by
+                // MixingPopeCloud::updatePhi().
                 const scalar wtSum = p.wt() + q.wt();
                 if (wtSum > VSMALL)
                 {
