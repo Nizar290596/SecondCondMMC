@@ -178,6 +178,14 @@ class KernelEstimation
             volScalarField& TEqvETarget
         );
 
+        void reconstructTemperatureTargets
+        (
+            const scalarField& thermalTarget,
+            const scalarField& initialTemperature,
+            const PtrList<volScalarField>& YEqvETarget,
+            volScalarField& TEqvETarget
+        );
+
 //        void mergeLists();
 public:
 

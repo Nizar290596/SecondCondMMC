@@ -9,3 +9,4 @@ ${CXX:-g++} -std=c++17 -O2 -Wall -Wextra -Werror -fsanitize=undefined \
 "$sc_test_dir/numerics"
 python3 "$repo/tests/secondConditioning/test_pairing.py"
 python3 "$repo/tests/secondConditioning/test_reference.py"
+python3 "$repo/tests/secondConditioning/test_kernel_temperature.py"

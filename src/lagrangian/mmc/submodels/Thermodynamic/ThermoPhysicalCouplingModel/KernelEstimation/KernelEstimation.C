@@ -250,6 +250,10 @@ void Foam::KernelEstimation<CloudType>::computeTargets
     //- Indicator (used to make zero source terms)
     this->Indicator() = Yt;
 
+    // The target and carrier thermos can share their registered T field.
+    // Never use a temperature field as temporary absolute-enthalpy storage.
+    const scalarField initialTemperature(this->owner().T().primitiveField());
+    scalarField thermalTarget(initialTemperature);
     TEqvETarget = this->owner().T();
 
     scalarField dTEqvETarget(TEqvETarget.size(),0.0);
@@ -265,7 +269,8 @@ void Foam::KernelEstimation<CloudType>::computeTargets
             YEqvETarget[specieI] = this->owner().composition().carrier().Y()[specieI];
            dYEqvETarget.append(scalarField(TEqvETarget.size(),0.0));
 
-            Yt += YEqvETarget[specieI];
+            if (YEqvETarget[specieI].name() != inertSpecie_)
+                Yt += YEqvETarget[specieI];
         }
 
         if (YEqvETarget[specieI].name()==inertSpecie_)
@@ -586,8 +591,8 @@ void Foam::KernelEstimation<CloudType>::computeTargets
                 I++;
             }
 
-            TEqvETarget[celli]  = sumWtT/sumWt;
-            dTEqvETarget[celli] = (sumdWtT - (TEqvETarget[celli] * sumdWt))/sumWt;
+            thermalTarget[celli]  = sumWtT/sumWt;
+            dTEqvETarget[celli] = (sumdWtT - (thermalTarget[celli] * sumdWt))/sumWt;
 
             //- Find maximum gradient to determine distance allowed to extrapolate
             scalar diffMag  = mag(maxVal_[I]-minVal_[I]);
@@ -610,8 +615,8 @@ void Foam::KernelEstimation<CloudType>::computeTargets
 
             this->Indicator()[celli] = 1.0;
 
-            if (debug_ && !coupleEnthalpy_ && (TEqvETarget[celli]>3000.0 || TEqvETarget[celli] < 290.0))
-                Pout << "Target Temp is: " << TEqvETarget[celli] << endl;
+            if (debug_ && !coupleEnthalpy_ && (thermalTarget[celli]>3000.0 || thermalTarget[celli] < 290.0))
+                Pout << "Target Temp is: " << thermalTarget[celli] << endl;
 
             lastCCell = celli;
 
@@ -639,14 +644,14 @@ void Foam::KernelEstimation<CloudType>::computeTargets
 
             scalar deltaT = dTEqvETarget[lastCCell]*df;
 
-            TEqvETarget[celli] = TEqvETarget[lastCCell] + deltaT;
+            thermalTarget[celli] = thermalTarget[lastCCell] + deltaT;
 
             this->Indicator()[celli] = 1.0;
 
-            if (debug_ && !coupleEnthalpy_ && (TEqvETarget[celli]>2200.0 || TEqvETarget[celli] < 290.0))
+            if (debug_ && !coupleEnthalpy_ && (thermalTarget[celli]>2200.0 || thermalTarget[celli] < 290.0))
             {
                     Info << "fLES: " << fLES << endl;
-                    Info << "Target Temp is: " << TEqvETarget[celli] << endl;
+                    Info << "Target Temp is: " << thermalTarget[celli] << endl;
             }
         }
     }
@@ -654,18 +659,8 @@ void Foam::KernelEstimation<CloudType>::computeTargets
     //- Make species add up to one
     YEqvETarget[N2Index] = scalar(1) - Yt;
     YEqvETarget[N2Index].max(0.0);
-    if (coupleEnthalpy_)
-    {
-        scalarField composition(YEqvETarget.size(), 0);
-        forAll(TEqvETarget, cell)
-            if (this->Indicator()[cell] > 0)
-            {
-                forAll(composition, species) composition[species] = YEqvETarget[species][cell];
-                const scalar meanEnthalpy = TEqvETarget[cell];
-                TEqvETarget[cell] = this->owner().composition().particleMixture(composition).THa
-                    (meanEnthalpy, this->owner().p()[cell], this->owner().T()[cell]);
-            }
-    }
+    reconstructTemperatureTargets
+        (thermalTarget, initialTemperature, YEqvETarget, TEqvETarget);
 
     if (mesh_.time().timeIndex() % diagnosticInterval_ == 0)
     {
@@ -925,3 +920,35 @@ void Foam::KernelEstimation<CloudType>::EqvETargetValues
 // ************************************************************************* //
 
 
+
+
+// Convert kernel thermal moments without exposing enthalpy as a temperature.
+template<class CloudType>
+void Foam::KernelEstimation<CloudType>::reconstructTemperatureTargets
+(
+    const scalarField& thermalTarget,
+    const scalarField& initialTemperature,
+    const PtrList<volScalarField>& YEqvETarget,
+    volScalarField& TEqvETarget
+)
+{
+    scalarField composition(YEqvETarget.size(), 0);
+    forAll(TEqvETarget, cell)
+    {
+        if (this->Indicator()[cell] <= 0) continue;
+        if (!coupleEnthalpy_)
+        {
+            TEqvETarget[cell] = thermalTarget[cell];
+            continue;
+        }
+        const scalar T0 = initialTemperature[cell];
+        const scalar meanEnthalpy = thermalTarget[cell];
+        if (!(T0 > 0 && std::isfinite(T0) && std::isfinite(meanEnthalpy)))
+            FatalErrorInFunction << "Invalid kernel temperature inversion input in cell "
+                << cell << ": initial T=" << T0 << ", mean absolute h=" << meanEnthalpy
+                << exit(FatalError);
+        forAll(composition, species) composition[species] = YEqvETarget[species][cell];
+        TEqvETarget[cell] = this->owner().composition().particleMixture(composition).THa
+            (meanEnthalpy, this->owner().p()[cell], T0);
+    }
+}

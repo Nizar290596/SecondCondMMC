@@ -159,6 +159,15 @@ temperature. It requires every mechanism species selected and dfMax=0. This pres
 the kernel's mean thermochemical state; it does not make relaxation coupling globally
 conservative by itself. The legacy temperature-average mode remains available.
 
+Kernel thermal moments are accumulated in a separate scalar buffer. A copy of the
+carrier temperature taken before target updates supplies the enthalpy inversion's
+initial guess. This is required because carrier and target thermos can share a
+registered T field: temporarily storing absolute enthalpy there can pass negative
+enthalpy as T0. Absolute enthalpy may legitimately be negative. An aliasing regression
+exercises the production reconstruction with shared and separate temperature fields;
+it does not replace an OpenFOAM/MPI integration test. Unsupported cells retain their
+initial species closure and temperature.
+
 Kernel coupling on phiModified is experimental: a conditional mean evaluated at a
 projected mean is generally not an unconditional mean. It requires explicit
 `allowExperimentalProgressCoupling true`. The dimensional overlay uses z. A full
