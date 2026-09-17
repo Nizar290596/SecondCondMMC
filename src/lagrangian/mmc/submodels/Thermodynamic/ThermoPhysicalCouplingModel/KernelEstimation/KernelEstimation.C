@@ -1,3 +1,4 @@
+#include <cmath>
 /*---------------------------------------------------------------------------*\
   =========                 |
   \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox
@@ -185,7 +186,7 @@ void Foam::KernelEstimation<CloudType>::buildParticleList()
 
         p[nwt_] = iter().m();
 
-        p[nT_] = iter().T();
+        p[nT_] = coupleEnthalpy_ ? iter().hA() : iter().T();
 
         p[nDist_] = VGREAT;
 
@@ -220,8 +221,8 @@ void Foam::KernelEstimation<CloudType>::buildParticleList()
         }
 
         //- Min and Max of temperature
-        maxVal_[numYEqv_] = max(maxVal_[numYEqv_],iter().T());
-        minVal_[numYEqv_] = min(minVal_[numYEqv_],iter().T());
+        maxVal_[numYEqv_] = max(maxVal_[numYEqv_],p[nT_]);
+        minVal_[numYEqv_] = min(minVal_[numYEqv_],p[nT_]);
 
         //if(nParticles > nLESCells)
 	if (subSample)
@@ -288,8 +289,8 @@ void Foam::KernelEstimation<CloudType>::computeTargets
     //scalar minf = min(XiC.Vars(CVIndexinXi).field().primitiveField());
     //scalar maxf = max(XiC.Vars(CVIndexinXi).field().primitiveField());
     //- Min and Max values of the conditioning variable
-    scalar minf = min(f.primitiveField());
-    scalar maxf = max(f.primitiveField());
+    scalar minf = f.empty() ? GREAT : min(f.primitiveField());
+    scalar maxf = f.empty() ? -GREAT : max(f.primitiveField());
 
     //scalar minz = minXiCVal_[XiC.cVarInXiC()[this->cVarName()]];
     //scalar maxz = maxXiCVal_[XiC.cVarInXiC()[this->cVarName()]];
@@ -375,9 +376,11 @@ void Foam::KernelEstimation<CloudType>::computeTargets
         Info << "Start to compute cell averages" << endl;
 
     label computedLES = 0;// counter for kernel computed cells
+    label insufficientSupport = 0;
+    scalar largestSupport = 0, smallestEffective = GREAT;
 
     //- Index of last cell computed with kernel
-    label lastCCell = (*LESPtrList.first())[nI_];
+    label lastCCell = LESPtrList.empty() ? 0 : label((*LESPtrList.first())[nI_]);
 
     scalar DELTAd = 0.0;
     scalar DELTAf = 0.0;
@@ -398,7 +401,7 @@ void Foam::KernelEstimation<CloudType>::computeTargets
         //- Do not compute cell value, source term is zero
         //- Used to avoid biased kernel at boundaries in coupling space
         //- It also helps to speed up computations
-        if ((fLES <= fLow_) || (fLES >= fHigh_))
+        if ((phiModEnabled_ && fLES < 0) || (fLES <= fLow_) || (fLES >= fHigh_))
             continue;
 
         //- Cell centre
@@ -410,7 +413,7 @@ void Foam::KernelEstimation<CloudType>::computeTargets
 
         //- compute using kernel if cell is far in coupling space (df>= DELTAf)
         //- or physical space (dd>= DELTAd)
-        if (mag(df) >= DELTAf || dd >= DELTAd || computedLES == 0)
+        if (mag(df) >= DELTAf || dd >= DELTAd || dd >= rMaxMax_ || computedLES == 0)
         {
             //- Find the k-nn particles to compute kernel !!!!!!!!
             //label nn = 20;//50;
@@ -439,14 +442,29 @@ void Foam::KernelEstimation<CloudType>::computeTargets
 
             //- Define kernel radius in physical space based on k-NN
 
-            vector disVector;
-            disVector[0] = result.begin()->disReal[0];
-            disVector[1] = result.begin()->disReal[1];
-            disVector[2] = result.begin()->disReal[2];
-
-            scalar rMax = min(max(0.0,mag(disVector)),rMaxMax_);
+            // Weighted-distance ordering does not imply physical-distance
+            // ordering. Measure all returned distances and enforce the cap.
+            scalar rMax = 0;
+            label withinRadius = 0;
+            for (label n=0; n<nFound; ++n)
+            {
+                const auto& d = result[n].disReal;
+                const scalar radius = sqrt(sqr(d[0])+sqr(d[1])+sqr(d[2]));
+                if (radius <= rMaxMax_)
+                {
+                    rMax = max(rMax, radius);
+                    ++withinRadius;
+                }
+            }
+            if (withinRadius < minKernelParticles_ || rMax <= ROOTVSMALL)
+            {
+                ++insufficientSupport;
+                continue; // Indicator remains zero; no fabricated Lagrangian target.
+            }
 
             //- Start to compute target values
+            scalar sumWt2 = 0.0;
+            label positiveSupport = 0;
             scalar sumWt   = 0.0;
             scalar sumdWt  = 0.0;
             scalar sumWtT  = 0.0;
@@ -477,6 +495,7 @@ void Foam::KernelEstimation<CloudType>::computeTargets
                 disXP[1] = result[nni].disReal[1];
                 disXP[2] = result[nni].disReal[2];
 
+                if (mag(disXP) > rMaxMax_) continue;
                 scalar NDistance  = mag(disXP)/h2; //////!!!!!!!!
 
                 //- 1-D cubic smoothing kernel weight
@@ -516,6 +535,8 @@ void Foam::KernelEstimation<CloudType>::computeTargets
                 scalar  Wti = mWti *  IDWf;
                 scalar dWti = mWti * dIDWf;
 
+                if (Wti > 0) ++positiveSupport;
+                sumWt2 += sqr(Wti);
                 sumWt   = sumWt   +  Wti;
                 sumdWt  = sumdWt  + dWti;
 
@@ -531,8 +552,14 @@ void Foam::KernelEstimation<CloudType>::computeTargets
                 }
             }
 
-            if (sumWt < VSMALL)
+            const scalar effective = sumWt2 > VSMALL ? sqr(sumWt)/sumWt2 : 0;
+            if (sumWt < VSMALL || positiveSupport < minKernelParticles_ || effective < minEffectiveSamples_)
+            {
+                ++insufficientSupport;
                 continue;
+            }
+            largestSupport = max(largestSupport, rMax);
+            smallestEffective = min(smallestEffective, effective);
 
             Yt[celli]      = 0.0;
             label I        = 0;
@@ -583,7 +610,7 @@ void Foam::KernelEstimation<CloudType>::computeTargets
 
             this->Indicator()[celli] = 1.0;
 
-            if (debug_ && (TEqvETarget[celli]>3000.0 || TEqvETarget[celli] < 290.0))
+            if (debug_ && !coupleEnthalpy_ && (TEqvETarget[celli]>3000.0 || TEqvETarget[celli] < 290.0))
                 Pout << "Target Temp is: " << TEqvETarget[celli] << endl;
 
             lastCCell = celli;
@@ -616,7 +643,7 @@ void Foam::KernelEstimation<CloudType>::computeTargets
 
             this->Indicator()[celli] = 1.0;
 
-            if (debug_ && (TEqvETarget[celli]>2200.0 || TEqvETarget[celli] < 290.0))
+            if (debug_ && !coupleEnthalpy_ && (TEqvETarget[celli]>2200.0 || TEqvETarget[celli] < 290.0))
             {
                     Info << "fLES: " << fLES << endl;
                     Info << "Target Temp is: " << TEqvETarget[celli] << endl;
@@ -627,21 +654,31 @@ void Foam::KernelEstimation<CloudType>::computeTargets
     //- Make species add up to one
     YEqvETarget[N2Index] = scalar(1) - Yt;
     YEqvETarget[N2Index].max(0.0);
-
-    // Coupling-coverage diagnostic: fraction of cells that received a Lagrangian
-    // target (Indicator==1). With the kernel estimator this should stay high even
-    // for the sparse flagged subset, unlike ParticleInCell which leaves a hole
-    // wherever a flagged particle is absent from the cell.
+    if (coupleEnthalpy_)
     {
-        const scalar nCov =
-            returnReduce(sum(this->Indicator().primitiveField()), sumOp<scalar>());
-        const label nTot =
-            returnReduce(this->Indicator().size(), sumOp<label>());
-        const label nP = returnReduce(particleList_.size(), sumOp<label>());
+        scalarField composition(YEqvETarget.size(), 0);
+        forAll(TEqvETarget, cell)
+            if (this->Indicator()[cell] > 0)
+            {
+                forAll(composition, species) composition[species] = YEqvETarget[species][cell];
+                const scalar meanEnthalpy = TEqvETarget[cell];
+                TEqvETarget[cell] = this->owner().composition().particleMixture(composition).THa
+                    (meanEnthalpy, this->owner().p()[cell], this->owner().T()[cell]);
+            }
+    }
 
-        Info<< "KernelEstimation coupling: " << label(nCov) << "/" << nTot
-            << " cells covered (" << 100.0*nCov/max(nTot, 1) << "%), "
-            << nP << " particles in kernel list" << endl;
+    if (mesh_.time().timeIndex() % diagnosticInterval_ == 0)
+    {
+        const scalar nCov = returnReduce(sum(this->Indicator().primitiveField()), sumOp<scalar>());
+        const label nTot = returnReduce(this->Indicator().size(), sumOp<label>());
+        reduce(insufficientSupport, sumOp<label>());
+        reduce(largestSupport, maxOp<scalar>());
+        reduce(smallestEffective, minOp<scalar>());
+        Info<< "KernelEstimation: " << label(nCov) << "/" << nTot
+            << " cells covered, insufficient-support queries=" << insufficientSupport
+            << ", max physical support=" << largestSupport
+            << ", minimum effective samples="
+            << (smallestEffective < GREAT ? smallestEffective : 0) << nl;
     }
 
     if (debug_)
@@ -698,6 +735,10 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
     rMaxMax_(this->coeffDict().lookupOrDefault("rMax", 1.0e9)),
 
     nNearest_(this->coeffDict().lookupOrDefault("nNearest", label(20))),
+    minKernelParticles_(this->coeffDict().lookupOrDefault("minKernelParticles", label(2))),
+    minEffectiveSamples_(this->coeffDict().lookupOrDefault("minEffectiveSamples", scalar(1))),
+    diagnosticInterval_(this->coeffDict().lookupOrDefault("diagnosticInterval", label(100))),
+    coupleEnthalpy_(this->coeffDict().lookupOrDefault("coupleEnthalpy", false)),
 
     particleList_(),
 
@@ -732,6 +773,22 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
 
     phiModCell_(nullptr)
 {
+    if (!(nNearest_ >= minKernelParticles_ && minKernelParticles_ >= 1
+        && fm_ > 0 && rMaxMax_ > 0 && fHigh_ > fLow_ && dfMax_ >= 0
+        && C2_ >= 0 && minEffectiveSamples_ >= 1 && minEffectiveSamples_ <= nNearest_
+        && diagnosticInterval_ >= 1)
+        || !std::isfinite(fm_ + rMaxMax_ + fLow_ + fHigh_ + dfMax_ + C2_ + minEffectiveSamples_))
+        FatalErrorInFunction << "Invalid kernel support, bounds or sample-count controls" << exit(FatalError);
+    if (this->coeffDict().found("condVariable"))
+        WarningInFunction << "KernelEstimationCoeffs/condVariable is ignored. Effective conditioning is "
+            << this->cVarName() << " from thermophysicalCoupling/condVariable. Remove the nested entry." << nl;
+    Info<< "KernelEstimation: condVariable=" << this->cVarName()
+        << ", nNearest=" << nNearest_ << ", rMax=" << rMaxMax_
+        << ", minKernelParticles=" << minKernelParticles_
+        << ", minEffectiveSamples=" << minEffectiveSamples_
+        << ", coupleEnthalpy=" << coupleEnthalpy_ << nl;
+    if (rMaxMax_ >= 1e8)
+        WarningInFunction << "Kernel physical support is effectively unbounded; set a justified rMax." << nl;
     forAll(this->solveEqvSpecie(), i)
     {
         if (this->solveEqvSpecie()[i])
@@ -739,6 +796,9 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
     }
 
     numYEqv_ = Yindexes_.size();
+    if (coupleEnthalpy_ && (numYEqv_ != this->owner().composition().componentNames().size() || dfMax_ != 0))
+        FatalErrorInFunction << "coupleEnthalpy requires all mechanism species in thermophysicalCoupling "
+            << "and dfMax 0. These conditions preserve the kernel mean composition and enthalpy." << exit(FatalError);
     numXiC_  = this->XiCNames().size();
 
     nYe_    = nYs_ + numYEqv_ - 1;
@@ -765,6 +825,11 @@ Foam::KernelEstimation<CloudType>::KernelEstimation
     // as the carrier for the conditioning value and a per-cell phi-degree is
     // projected from the flagged particles each step (buildPhiModCell()).
     phiModEnabled_ = (this->cVarName() == "phiModified");
+    if (phiModEnabled_ && !this->coeffDict().lookupOrDefault("allowExperimentalProgressCoupling", false))
+        FatalErrorInFunction << "Progress-conditioned Eulerian coupling evaluates a conditional mean at a "
+            << "projected mean, not an unconditional mean. It is not specified by the paper. "
+            << "Use the registered mixture fraction, or explicitly set "
+            << "allowExperimentalProgressCoupling true for a separate validation study." << exit(FatalError);
 
     if (phiModEnabled_ && this->XiCNames().empty())
         FatalErrorInFunction

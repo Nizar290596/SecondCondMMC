@@ -55,6 +55,10 @@ Foam::particlePairingMethod::particlePairingMethod(const dictionary& dict)
     {
         pairingMethod_ = pairingMethod::localPairing;
     }
+    else if (pairingMethodName == "neighbourPairs")
+    {
+        pairingMethod_ = pairingMethod::neighbourPairs;
+    }
     else if (pairingMethodName == "subVolumes")
     {
         pairingMethod_ = pairingMethod::subVolumes;
@@ -66,6 +70,7 @@ Foam::particlePairingMethod::particlePairingMethod(const dictionary& dict)
             << "Possible particle pairing methods are: " << nl
             << token::TAB << "local" << nl
             << token::TAB << "global" <<nl
+            << token::TAB << "neighbourPairs" <<nl
             << token::TAB << "subVolumes" << exit(FatalIOError); 
     }
 }
@@ -76,6 +81,8 @@ Foam::Ostream& Foam::operator <<(Ostream& os, const particlePairingMethod& m)
         os << "local";
     else if (m.method() == particlePairingMethod::pairingMethod::globalPairing)
         os << "global";
+    else if (m.method() == particlePairingMethod::pairingMethod::neighbourPairs)
+        os << "neighbourPairs";
     else if (m.method() == particlePairingMethod::pairingMethod::subVolumes)
         os << "subVolumes";
     

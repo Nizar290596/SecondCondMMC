@@ -1,0 +1,103 @@
+/*--------------------------------*- C++ -*----------------------------------*\
+| =========                 |                                                 |
+| \\      /  F ield         | OpenFOAM: The Open Source CFD Toolbox           |
+|  \\    /   O peration     | Version:  1.0                                   |
+|   \\  /    A nd           | Web:      http://www.openfoam.org               |
+|    \\/     M anipulation  |                                                 |
+\*---------------------------------------------------------------------------*/
+
+FoamFile
+{
+    version         2.0;
+    format          ascii;
+
+    root            "";
+    case            "";
+    instance        "";
+    local           "";
+
+    class           dictionary;
+    object          referenceVariableProperties;
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+
+f
+{
+    interpolationScheme     cellPoint;
+}
+
+z
+{
+    interpolationScheme     cellPoint;
+}
+
+sPx
+{
+
+    SDEModel    scalarShadowPosition;
+    randomSeed  5489;
+
+    a   1;//abar using a value for "a" of 0.97;
+    b   3.895;//7.79;
+    variableLambda yes;
+
+    component   x;
+
+    interpolationSchemes
+    {
+/*        U.component(0)          cellPoint;*/
+        U                       cellPoint;
+        D                       cellPoint;
+        Dt                      cellPoint;
+        DeltaE                cellPoint;
+        vb                      cellPoint;
+    }
+}
+
+sPy
+{
+
+    SDEModel    scalarShadowPosition;
+    randomSeed  5489;
+
+    a   1;
+    b   3.895;//7.79;
+    variableLambda yes;
+
+    component   y;
+
+    interpolationSchemes
+    {
+/*        U.component(1)          cellPoint;*/
+        U                       cellPoint;
+        D                       cellPoint;
+        Dt                      cellPoint;
+        DeltaE                  cellPoint;
+        vb                      cellPoint;
+    }
+}
+
+sPz
+{
+    SDEModel    scalarShadowPosition;
+    randomSeed  5489;
+
+    a   1;
+    b   3.895;//7.79;
+    variableLambda yes;
+
+    component   z;
+
+    interpolationSchemes
+    {
+/*        U.component(2)          cellPoint;*/
+        U                       cellPoint;
+        D                       cellPoint;
+        Dt                      cellPoint;
+        DeltaE                  cellPoint;
+        vb                      cellPoint;
+    }
+}
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //

@@ -74,7 +74,8 @@ class particlePairingMethod
         {
             localPairing,
             subVolumes,
-            globalPairing
+            globalPairing,
+            neighbourPairs
         };
 
     private:

@@ -32,6 +32,10 @@ Author
 
 #include "mixParticleModel.H"
 #include <unordered_set>
+#include <numeric>
+#include <algorithm>
+#include <cmath>
+#include "processorPolyPatch.H"
 // * * * * * * * * * * * * * Protected Member Functions  * * * * * * * * * * //
 
 // * * * * * * * * * * * * * * * * Constructors  * * * * * * * * * * * * * * //
@@ -56,6 +60,16 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
     ri_(readScalar(this->coeffDict().lookup("r_i"))),
 
     Xii_(getXiNormalisation()),
+    physicalLocalization_(this->coeffDict().lookupOrDefault("physicalLocalization",
+        owner.cloudProperties().subOrEmptyDict("secondConditioning").template lookupOrDefault<bool>("enabled", false))),
+    retainedPairFraction_(this->coeffDict().lookupOrDefault("retainedPairFraction",
+        owner.cloudProperties().subOrEmptyDict("secondConditioning").template lookupOrDefault<bool>("enabled", false) ? scalar(0.8) : scalar(1))),
+    maxPairDistance_(this->coeffDict().lookupOrDefault("maxPairDistance", scalar(0))),
+    mixingExtentModel_(this->coeffDict().template lookupOrDefault<word>("mixingExtentModel",
+        type == "secondCondMMCcurl" ? word("modifiedCurl") : word("exponential"))),
+    mixingTimeScale_(this->coeffDict().template lookupOrDefault<word>("mixingTimeScale",
+        this->coeffDict().lookupOrDefault("aISO", true) ? word("aISO") : word("gradient"))),
+    prescribedTauMix_(this->coeffDict().lookupOrDefault("tauMix", scalar(-1))),
 
 //    fLow_(this->coeffDict().template lookupOrDefault<scalar>("fLow",-GREAT)),
     
@@ -92,7 +106,29 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
     //        this->coeffDict()
     //    )
     //)
-{}
+{
+    if (!(ri_ > 0 && std::isfinite(ri_) && retainedPairFraction_ > 0
+        && retainedPairFraction_ <= 1 && maxPairDistance_ >= 0
+        && std::isfinite(maxPairDistance_)))
+        FatalErrorInFunction << "Require r_i > 0, 0 < retainedPairFraction <= 1, "
+            << "and finite maxPairDistance >= 0" << exit(FatalError);
+    if (mixingExtentModel_ != "exponential" && mixingExtentModel_ != "modifiedCurl")
+        FatalErrorInFunction << "mixingExtentModel must be exponential or modifiedCurl" << exit(FatalError);
+    if (mixingTimeScale_ != "aISO" && mixingTimeScale_ != "prescribed" && mixingTimeScale_ != "gradient")
+        FatalErrorInFunction << "mixingTimeScale must be aISO, gradient or prescribed" << exit(FatalError);
+    if (mixingTimeScale_ == "prescribed" && !(prescribedTauMix_ > 0 && std::isfinite(prescribedTauMix_)))
+        FatalErrorInFunction << "Prescribed mixing requires finite tauMix > 0 [s]" << exit(FatalError);
+    for (const word key : {word("nPairSamples"), word("particleFilter"),
+                           word("localnessLimited"), word("fullSort")})
+        if (this->coeffDict().found(key))
+            WarningInFunction << key << " is not used; remove it. Use the explicit "
+                << "localization and retainedPairFraction controls." << nl;
+    Info<< type << ": physicalLocalization=" << physicalLocalization_
+        << ", retainedPairFraction=" << retainedPairFraction_
+        << ", maxPairDistance=" << maxPairDistance_
+        << ", extent=" << mixingExtentModel_ << ", timescale=" << mixingTimeScale_
+        << ", tauMix=" << prescribedTauMix_ << nl;
+}
 
 
 template <class CloudType>
@@ -111,7 +147,13 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
 
     ri_(readScalar(this->coeffDict().lookup("r_i"))),
 
-    Xii_(getXiNormalisation()),
+    Xii_(cm.Xii_),
+    physicalLocalization_(cm.physicalLocalization_),
+    retainedPairFraction_(cm.retainedPairFraction_),
+    maxPairDistance_(cm.maxPairDistance_),
+    mixingExtentModel_(cm.mixingExtentModel_),
+    mixingTimeScale_(cm.mixingTimeScale_),
+    prescribedTauMix_(cm.prescribedTauMix_),
 
 //    fLow_(cm.fLow_),
     
@@ -141,7 +183,7 @@ Foam::mixParticleModel<CloudType>::mixParticleModel
 
     mu_
     (
-        this->owner().mesh().objectRegistry::lookupObject<volScalarField>("mu")
+        this->owner().mesh().objectRegistry::lookupObject<volScalarField>("thermo:mu")
     ),
     
     vb_(this->owner().mesh().objectRegistry::lookupObject<volScalarField>("vb")),
@@ -177,7 +219,7 @@ void Foam::mixParticleModel<CloudType>::buildParticleList
 		//Info << "nameI: "<<nameI << endl;
         magSqr_XiR_.set
         (
-            II,
+            this->XiR_.rVarInXiR()[nameI],
             new volScalarField
             (
                 magSqr(fvc::grad(this->XiR_.Vars(nameI).field()))
@@ -214,7 +256,7 @@ void Foam::mixParticleModel<CloudType>::buildParticleList
     // clear particle list from old data
     particleList_.clear();
     
-    StochasticLib1 rand(time(0));
+    StochasticLib1& rand = this->owner().rndGen();
     
     eulerianFieldDataList_.clear();
     
@@ -329,7 +371,7 @@ void Foam::mixParticleModel<CloudType>::buildParticleListLocalMixing
     {
         magSqr_XiR_.set
         (
-            II,
+            this->XiR_.rVarInXiR()[nameI],
             new volScalarField
             (
                 magSqr(fvc::grad(this->XiR_.Vars(nameI).field()))
@@ -365,7 +407,7 @@ void Foam::mixParticleModel<CloudType>::buildParticleListLocalMixing
     // clear particle list from old data
     particleList_.clear();
     
-    StochasticLib1 rand(time(0));
+    StochasticLib1& rand = this->owner().rndGen();
     
     eulerianFieldDataList_.clear();
     
@@ -517,7 +559,7 @@ void Foam::mixParticleModel<CloudType>::collectEulerianDataFields()
     // Estimate space for eulerianFields
     eulerianFieldDataList_.reserve
     (
-        particleMixingProcessors_.size()*this->owner().size()
+        particleMixingProcessors_.size()*tlocalEulerianFields.size()
     );
 //	Info << "CheckPoint 6 " <<endl;
     for (const label& procI : particleMixingProcessors_)
@@ -575,13 +617,11 @@ void Foam::mixParticleModel<CloudType>::collectParticleData()
     const fvMesh& mesh = this->owner().mesh();
 
     // particle number on local processor
-    const label numLocalParticles = this->owner().size();
+    const label numLocalParticles = particleList_.size();
 
     // Reserve some space
-    forAll(particlesToSendToProcessor,i)
-    {
+    for (label i : particleMixingProcessors_)
         particlesToSendToProcessor[i].reserve(0.05*numLocalParticles);
-    }
     
     for (const List<label>& pair : particlePairs_)
     {
@@ -624,6 +664,13 @@ void Foam::mixParticleModel<CloudType>::collectParticleData()
     }
 
 
+    for (label proc : particleMixingProcessors_)
+    {
+        auto& send = particlesToSendToProcessor[proc];
+        std::sort(send.begin(), send.end());
+        const auto end = std::unique(send.begin(), send.end());
+        send.resize(std::distance(send.begin(), end));
+    }
     PstreamBuffers pBufs(Pstream::commsTypes::nonBlocking);
 
     for (const label& procI : particleMixingProcessors_)
@@ -697,10 +744,29 @@ void Foam::mixParticleModel<CloudType>::Smix()
     // Mix the particles
     //SmixList();
     // Now all particles for which parallel handling is considered
+    minMixingTime_ = GREAT;
+    maxMixingCourant_ = 0;
+    weightedProgressVarianceLoss_ = 0;
     buildParticleList();
-    
-    // Mix the list
     SmixList();
+    const label interval = this->coeffDict().template lookupOrDefault<label>("diagnosticInterval", 100);
+    if (this->owner().mesh().time().timeIndex() % max(interval, label(1)) == 0)
+    {
+        scalar minimum = minMixingTime_, maximum = maxMixingCourant_;
+        reduce(minimum, minOp<scalar>());
+        reduce(maximum, maxOp<scalar>());
+        scalar loss = weightedProgressVarianceLoss_, weight = 0;
+        forAllIters(this->owner(), particle) weight += particle().wt();
+        reduce(loss, sumOp<scalar>());
+        reduce(weight, sumOp<scalar>());
+        Info<< "Mixing timescale: min tau=" << (minimum < GREAT ? minimum : 0)
+            << ", max exchange dt/tau=" << maximum
+            << ", extent=" << mixingExtentModel_ << nl;
+        if (loss > 0 && weight > VSMALL)
+            Info<< "Dense progress mixing: Nphi="
+                << loss/(2*this->owner().mesh().time().deltaTValue()*weight)
+                << " [1/s], inferred from weighted variance loss during mixing" << nl;
+    }
 }
 
 
@@ -716,6 +782,36 @@ Foam::mixParticleModel<CloudType>::getParticleMixingProcessors()
             procList[i] = i;
         }
         return procList;
+    }
+
+    if (pairingMethod_.method() == particlePairingMethod::neighbourPairs)
+    {
+        if (!processorGraphReady_)
+        {
+            List<labelList> neighbours(Pstream::nProcs());
+            DynamicList<label> localNeighbours;
+            const polyBoundaryMesh& patches = this->owner().mesh().boundaryMesh();
+            forAll(patches, i)
+                if (isA<processorPolyPatch>(patches[i]))
+                    localNeighbours.append(refCast<const processorPolyPatch>(patches[i]).neighbProcNo());
+            neighbours[Pstream::myProcNo()] = localNeighbours;
+            Pstream::gatherList(neighbours);
+            Pstream::scatterList(neighbours);
+            forAll(neighbours, rank)
+                for (label other : neighbours[rank])
+                    if (other != rank)
+                        processorEdges_.emplace_back(min(rank, other), max(rank, other));
+            std::sort(processorEdges_.begin(), processorEdges_.end());
+            processorEdges_.erase(std::unique(processorEdges_.begin(), processorEdges_.end()), processorEdges_.end());
+            processorGraphReady_ = true;
+        }
+        const auto partners = secondConditioningNumerics::neighbourPartners
+            (Pstream::nProcs(), processorEdges_, this->owner().mesh().time().timeIndex());
+        const label me = Pstream::myProcNo(), other = partners[me];
+        List<label> group(other < 0 ? 1 : 2);
+        group[0] = other < 0 ? me : min(me, other);
+        if (other >= 0) group[1] = max(me, other);
+        return group;
     }
 
     // Only works for one reference variable 
@@ -758,23 +854,16 @@ void Foam::mixParticleModel<CloudType>::SmixList()
             const eulerianFieldData& e2 = eulerianFieldDataList_[pair[1]];
             const eulerianFieldData& e3 = eulerianFieldDataList_[pair[2]];
 
-            // Only call mixpair for processor local particles, as remote
-            // particles are mixed on their respective processor
-
-            if (e1.local() || e2.local())
-                mixpair
-                (
-                    particleList_[e1.particleIndex()],e1,
-                    particleList_[e2.particleIndex()],e2,
-                    deltaT
-                );
-            if (e2.local() || e3.local())
-                mixpair
-                (
-                    particleList_[e2.particleIndex()],e2,
-                    particleList_[e3.particleIndex()],e3,
-                    deltaT
-                );
+            if (e1.local() || e2.local() || e3.local())
+            {
+                scalar halfDt = 0.5*deltaT;
+                mixpair(particleList_[e1.particleIndex()],e1,
+                        particleList_[e2.particleIndex()],e2,halfDt);
+                mixpair(particleList_[e2.particleIndex()],e2,
+                        particleList_[e3.particleIndex()],e3,halfDt);
+                mixpair(particleList_[e3.particleIndex()],e3,
+                        particleList_[e1.particleIndex()],e1,halfDt);
+            }
         }
     }
 }
@@ -796,7 +885,14 @@ List<scalar> Foam::mixParticleModel<CloudType>::getXiNormalisation()
     label i=0;
     for (const word& refVarName :this->XiRNames())
     {
-        Xii[i++] = readScalar(XiDict.lookup(refVarName+"_m"));
+        const label index = XiRIndexes[refVarName];
+        Xii[index] = XiDict.found(refVarName+"_m")
+            ? readScalar(XiDict.lookup(refVarName+"_m")) : scalar(1);
+        if (!XiDict.found(refVarName+"_m")
+            && this->coeffDict().lookupOrDefault("includeShadowPositions", true))
+            FatalErrorInFunction << "Missing normalization " << refVarName << "_m" << exit(FatalError);
+        if (!(Xii[index] > 0 && std::isfinite(Xii[index])))
+            FatalErrorInFunction << "Invalid normalization for " << refVarName << exit(FatalError);
     }
 
 	//Info << "Xii" << Xii << endl;
@@ -816,6 +912,8 @@ void Foam::mixParticleModel<CloudType>::findPairs
     // Reset the per-axis split-counter (one slot per XiR axis)
     splitAxisHistogram_.setSize(Xii_.size());
     splitAxisHistogram_ = 0;
+
+    if (eulerianFieldList.size() < 2) return;
 
     // Keeping track of indices for premixedkdTreeLikeSearch
     std::vector<label> L;
@@ -859,7 +957,39 @@ void Foam::mixParticleModel<CloudType>::findPairs
         }
 	//Info << "PAIRS SIZE" << pairs.size() << endl;
     }
-	
+
+    if (retainedPairFraction_ >= 1 && maxPairDistance_ <= 0) return;
+
+    auto distance = [&](const List<label>& group, bool physicalOnly) -> scalar
+    {
+        scalar maximum = 0;
+        forAll(group, i) for (label j=i+1; j<group.size(); ++j)
+        {
+            const auto& a = eulerianFieldList[group[i]];
+            const auto& b = eulerianFieldList[group[j]];
+            scalar d = magSqr(a.position()-b.position());
+            if (!physicalOnly)
+            {
+                d = physicalLocalization_ ? d/sqr(ri_) : 0;
+                forAll(Xii_, k) d += sqr((a.XiR()[k]-b.XiR()[k])/Xii_[k]);
+            }
+            maximum = max(maximum, d);
+        }
+        return maximum;
+    };
+    std::stable_sort(pairs.begin(), pairs.end(), [&](const List<label>& a, const List<label>& b)
+        { return distance(a, false) < distance(b, false); });
+    const label budget = label(std::ceil(retainedPairFraction_*eulerianFieldList.size()));
+    DynamicList<List<label>> accepted;
+    label retained = 0;
+    for (const auto& group : pairs)
+    {
+        if (maxPairDistance_ > 0 && distance(group, true) > sqr(maxPairDistance_)) continue;
+        if (retained + group.size() > budget) continue;
+        accepted.append(group);
+        retained += group.size();
+    }
+    pairs = std::move(accepted);
 }
 
 template <class CloudType>
@@ -900,27 +1030,21 @@ void Foam::mixParticleModel<CloudType>::KkdTreeLikeSearch
     std::advance(iterU,u  );
 
 
-    //scalar maxInX = -GREAT;
-    //scalar maxInY = -GREAT;
-    //scalar maxInZ = -GREAT;
+    vector maxPosition(-GREAT, -GREAT, -GREAT);
     List<scalar> maxInXiR(Xii_.size(),-GREAT);
 
-    //scalar minInX = GREAT;
-    //scalar minInY = GREAT;
-    //scalar minInZ = GREAT;
+    vector minPosition(GREAT, GREAT, GREAT);
     List<scalar> minInXiR(Xii_.size(),GREAT);
 
     // Find minimum and maximum for each coordinate
     for (auto it = iterL; it != iterU; it++)
     {
         auto& pos = particleList[*it].position();
-        //maxInX = std::max(maxInX,pos.x());
-        //maxInY = std::max(maxInY,pos.y());
-        //maxInZ = std::max(maxInZ,pos.z());
-
-        //minInX = std::min(minInX,pos.x());
-        //minInY = std::min(minInY,pos.y());
-        //minInZ = std::min(minInZ,pos.z());
+        for (label axis=0; axis<3; ++axis)
+        {
+            maxPosition[axis] = max(maxPosition[axis], pos[axis]);
+            minPosition[axis] = min(minPosition[axis], pos[axis]);
+        }
 
         forAll(Xii_,i)
         {
@@ -934,26 +1058,12 @@ void Foam::mixParticleModel<CloudType>::KkdTreeLikeSearch
     scalar disMax = 0;
     label ncond = 0;
 
-    //scalar disX = (maxInX - minInX)/ri_;
-    //if(disX > disMax)
-    //{
-        //disMax = disX;
-        //ncond = 0;
-    //}
-
-    //scalar disY = (maxInY - minInY)/ri_;
-    //if(disY > disMax)
-    //{
-        //disMax = disY;
-        //ncond = 1;
-    //}
-
-    //scalar disZ = (maxInZ - minInZ)/ri_;
-    //if(disZ > disMax)
-    //{
-        //disMax = disZ;
-        //ncond = 2;
-    //}
+    if (physicalLocalization_)
+        for (label axis=0; axis<3; ++axis)
+        {
+            const scalar span = (maxPosition[axis]-minPosition[axis])/ri_;
+            if (span > disMax) { disMax = span; ncond = axis; }
+        }
 	scalar disXiR(0.0);
     forAll(Xii_,i)
     {
@@ -981,7 +1091,9 @@ void Foam::mixParticleModel<CloudType>::KkdTreeLikeSearch
         iterU,
         [&](label& A, label& B) -> bool
         {
-            return comp(particleList[A],particleList[B]);
+            if (comp(particleList[A],particleList[B])) return true;
+            if (comp(particleList[B],particleList[A])) return false;
+            return A < B;
         }
     );
 
@@ -995,3 +1107,41 @@ void Foam::mixParticleModel<CloudType>::KkdTreeLikeSearch
 
 
 
+
+
+template<class CloudType>
+Foam::scalar Foam::mixParticleModel<CloudType>::readMixingConstant() const
+{
+    const dictionary& d = this->coeffDict();
+    if (d.found("C_E"))
+        WarningInFunction << "C_E is a deprecated alias for CE; use CE only." << nl;
+    const scalar value = d.template lookupOrDefault<scalar>("CE",
+        d.template lookupOrDefault<scalar>("C_E", 0.1));
+    if (d.found("CE") && d.found("C_E") && value != readScalar(d.lookup("C_E")))
+        FatalErrorInFunction << "Conflicting CE and C_E" << exit(FatalError);
+    if (!(value > 0 && std::isfinite(value)))
+        FatalErrorInFunction << "CE must be positive and finite" << exit(FatalError);
+    return value;
+}
+
+template<class CloudType>
+Foam::scalar Foam::mixParticleModel<CloudType>::pairMixingExtent
+(
+    const eulerianFieldData& p, const eulerianFieldData& q, scalar dt, scalar tau
+) const
+{
+    if (!(tau > 0 && dt >= 0 && std::isfinite(tau) && std::isfinite(dt)))
+        FatalErrorInFunction << "Invalid mixing time: dt=" << dt << ", tau=" << tau << exit(FatalError);
+    minMixingTime_ = min(minMixingTime_, tau);
+    maxMixingCourant_ = max(maxMixingCourant_, dt/tau);
+    try
+    {
+        return secondConditioningNumerics::mixingExtent
+            (dt, tau, mixingExtentModel_ == "modifiedCurl", p.Rand(), q.Rand());
+    }
+    catch (const std::exception& error)
+    {
+        FatalErrorInFunction << error.what() << "; dt=" << dt << ", tau=" << tau << exit(FatalError);
+    }
+    return 0;
+}

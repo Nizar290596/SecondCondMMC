@@ -75,6 +75,13 @@ void Foam::ThermoPhysicalCouplingModel<CloudType>::setThermoPhysicalCoupling()
     const word tUnits(couplingDict.lookup("tauUnits"));
 
     tauUnits_ = tUnits;
+    if (!(tauTmpTarget > 0))
+        FatalErrorInFunction << "tauRelax must be positive" << exit(FatalError);
+    Info<< "Eulerian coupling: condVariable=" << cVarName_ << ", tauRelax="
+        << tauTmpTarget << ", tauUnits=" << tauUnits_ << nl;
+    if (tauUnits_ == "timestep")
+        WarningInFunction << "tauRelax is proportional to deltaT. Use tauUnits time "
+            << "to keep the physical coupling time fixed during timestep studies." << nl;
 
     if (tauUnits_ != "time" && tauUnits_ != "timestep")
     {

@@ -123,6 +123,10 @@ class MixingPopeCloud
  
             //- Activation parameter in the progress-variable reaction term
             scalar secondCondZPhi_;
+            scalar secondCondMaxSourceStep_ = 0.05;
+            scalar secondCondAgeRate_ = 0;
+            scalar secondCondAgeThreshold_ = 0.99;
+            StochasticLib1 secondCondRandom_{5489};
 
     // Protected Member Functions
 
@@ -134,6 +138,9 @@ class MixingPopeCloud
 
 
   public:
+
+        // Explicit initialization for fresh particles or a requested restart migration.
+        void initializeSecondConditioningState(particleType& particle);
 
     // Constructors
 
@@ -221,7 +228,7 @@ class MixingPopeCloud
         //  Must be called after mixing().Smix() and before updateOUProcess().
         void updatePhiReaction(scalar deltaT);
  
-        //- Advance ω_OU and recompute φ° = φ·exp(β·ω_OU) for flagged particles.
+        //- Advance subset OU state, optional reference age, and refresh all phiModified.
         //  Must be called after updatePhiReaction() and before secondCondMixing().Smix().
         void updateOUProcess(scalar deltaT);
 

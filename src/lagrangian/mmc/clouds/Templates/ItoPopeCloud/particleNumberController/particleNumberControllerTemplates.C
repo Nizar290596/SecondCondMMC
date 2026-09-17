@@ -1,3 +1,5 @@
+#include <numeric>
+#include <vector>
 /*---------------------------------------------------------------------------*\
                                        8888888888                              
                                        888                                     
@@ -60,7 +62,7 @@ void Foam::particleNumberController::correct
             
             if (nc > Nhi_)
             {
-                std::sort(cellParticles.begin(),cellParticles.end(),lessWt<ParticleType>());
+                std::stable_sort(cellParticles.begin(),cellParticles.end(),lessWt<ParticleType>());
             
                 const label particlesToDelete = nc-Npc_;
                 label particlesDeleted = 0;
@@ -93,7 +95,7 @@ void Foam::particleNumberController::correct
             }
             else if (nc != 0 && nc < Nlo_)
             {
-                std::sort(cellParticles.begin(),cellParticles.end(),lessWt<ParticleType>());
+                std::stable_sort(cellParticles.begin(),cellParticles.end(),lessWt<ParticleType>());
             
                 label nclone = Npc_ - nc;
             
@@ -136,6 +138,7 @@ Foam::particleNumberController::collectParticleList(CloudType& cloud)
     using ParticleType = typename CloudType::particleType;    
     
     List<DynamicList<scalar>> particleInSuperCellWeights(nSuperCells_);
+    List<DynamicList<label>> particleOwners(nSuperCells_);
     
     // Store the particle weights, required for the sorting later
     for (auto it=cloud.begin(); it != cloud.end(); ++it)
@@ -144,6 +147,7 @@ Foam::particleNumberController::collectParticleList(CloudType& cloud)
         const label superCellI = superCellForCell_[it().cell()];
 
         particleInSuperCellWeights[superCellI].append(it().wt());
+        particleOwners[superCellI].append(Pstream::myProcNo());
     }
 
     if (Pstream::parRun())
@@ -183,6 +187,7 @@ Foam::particleNumberController::collectParticleList(CloudType& cloud)
                         
                         UIPstream fromBuffer(procI,pBufs);
                         fromBuffer >> particleWeightsOfProcI;
+                        forAll(particleWeightsOfProcI, i) particleOwners[superCellI].append(procI);
                         particleInSuperCellWeights[superCellI].append
                         (
                             std::move(particleWeightsOfProcI)
@@ -237,6 +242,20 @@ Foam::particleNumberController::collectParticleList(CloudType& cloud)
         }
     }
     
+    // Every owner must apply the synchronized random draws to the same
+    // particle order, including ties in weight. Local-first order differs
+    // between ranks and can otherwise double-delete or double-clone a sample.
+    forAll(particlesInSuperCell, superCellI)
+    {
+        auto& particles = particlesInSuperCell[superCellI];
+        std::vector<label> order(particles.size());
+        std::iota(order.begin(), order.end(), 0);
+        std::stable_sort(order.begin(), order.end(), [&](label a, label b)
+            { return particleOwners[superCellI][a] < particleOwners[superCellI][b]; });
+        DynamicList<Tuple2<scalar, ParticleType*>> ordered;
+        for (label i : order) ordered.append(particles[i]);
+        particles = std::move(ordered);
+    }
     return particlesInSuperCell;
 }
 

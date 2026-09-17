@@ -55,7 +55,7 @@ Foam::mixingSubVolumes::mixingSubVolumes
     ri_(ri),
     Xii_(Xii)
 {
-    if (Pstream::parRun())
+    if (Pstream::parRun() && dict.lookupOrDefault<word>("pairingMethod", "local") == "subVolumes")
         genSubVolumeSets();
 }
 

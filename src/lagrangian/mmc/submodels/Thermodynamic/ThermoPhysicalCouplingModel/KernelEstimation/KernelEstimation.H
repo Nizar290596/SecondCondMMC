@@ -127,6 +127,10 @@ class KernelEstimation
 
 	//- Number of nearest neighbours used to build each cell kernel
         const label nNearest_;
+        const label minKernelParticles_;
+        const scalar minEffectiveSamples_;
+        const label diagnosticInterval_;
+        const Switch coupleEnthalpy_;
 
         DynamicList<densParticle>  particleList_;
         DynamicList<densParticle>  LESList_;

@@ -45,7 +45,7 @@ if(pdfMethodOn)
         // first-level quantity — but it only exists when second conditioning
         // is part of the setup, so it shares the same guard as steps 4 and 5.
         // When second conditioning is off the solver goes directly to step 6,
-        // identical to the original baseline solver.
+        // using ordinary composition mixing and chemistry.
         const bool secondCondEnabled = pSets[pSi].secondCondMixingEnabled();
  
         if (secondCondEnabled)
@@ -60,7 +60,6 @@ if(pdfMethodOn)
             //    after reaction so φ° reflects the reacted φ
             pSets[pSi].updateOUProcess(deltaT);
  
-        Info << "\tFinish mixing in " << t1mix - t0mix<< "s" <<endl;
             // 5. Second-conditioning mixing — uses updated φ° values
             //    (stored as eulerianFieldData.XiR()[0] in buildParticleList)
             const scalar t0sc = runTime.elapsedCpuTime();
@@ -75,13 +74,11 @@ if(pdfMethodOn)
         Info << "\tMove particle and solve reaction..." << endl;
         const scalar t0solve = runTime.elapsedCpuTime();
 
-	Pout<< "\t [solve] entering, local nParticles = " << pSets[pSi].size() << endl;
 
         // In solve() the particle move() function is called 
         // if balanceReactionLoad is true, solve(td) does not calculate chemistry
         pSets[pSi].solve(pSets[pSi],td);
 
-	Pout<< "\t [solve] exited, local nParticles = " << pSets[pSi].size() << endl;
 
         // Sreact() is only defined in finiteRateChem, it does nothing for other reacting models
         if(pSets[pSi].balanceReactionLoad())

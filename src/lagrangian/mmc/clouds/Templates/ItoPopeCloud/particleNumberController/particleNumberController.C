@@ -48,6 +48,8 @@ Foam::particleNumberController::particleNumberController
         constructSuperMesh(mesh)
     )
 {
+    const int seeds[] = {int(particleManagementDict_.lookupOrDefault<label>("randomSeed", 5489)), 78193};
+    numberControlRandom_.RandomInitByArray(seeds, 2);
     nSuperCells_ = superMesh_->cells().size();
     
     // Set sizes
@@ -300,7 +302,7 @@ Foam::particleNumberController::synchronizeRandomSeed() const
     {
         // The root processor generates the seed and scatters it to all 
         // processors
-        StochasticLib1 rndGen(time(0));
+        StochasticLib1& rndGen = numberControlRandom_;
         forAll(seedsForSuperCell,superCellI)
         {
             seedsForSuperCell[superCellI] = rndGen.IRandom(-247483640,247483640);

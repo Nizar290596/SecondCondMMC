@@ -144,6 +144,7 @@ class particleNumberController
             //  This is required to ensure, that the same super cell uses the 
             //  same random number, even if it is distributed over multiple 
             //  processors
+            mutable StochasticLib1 numberControlRandom_{5489};
             List<int> synchronizeRandomSeed() const;
             
             //- Generate a random points within a super cell
@@ -168,8 +169,8 @@ class particleNumberController
 
                     inline bool operator()
                     (
-                        Tuple2<scalar,ParticleType*>& one,
-                        Tuple2<scalar,ParticleType*>& two
+                        const Tuple2<scalar,ParticleType*>& one,
+                        const Tuple2<scalar,ParticleType*>& two
                     ) const {return one.first() < two.first();}
             };
             
