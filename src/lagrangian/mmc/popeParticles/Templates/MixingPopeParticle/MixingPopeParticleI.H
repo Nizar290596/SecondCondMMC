@@ -42,7 +42,8 @@ inline Foam::MixingPopeParticle<ParticleType>::MixingPopeParticle
     secondCondFlag_(0),
     omegaOU_(0.0),
     phi_(0.0),
-    phiModified_(0.0)
+    phiModified_(0.0),
+    burnedAge_(0.0)
 {}
 
 

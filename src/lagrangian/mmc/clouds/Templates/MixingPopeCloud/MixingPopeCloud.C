@@ -32,6 +32,42 @@ License
 template<class CloudType>
 void Foam::MixingPopeCloud<CloudType>::setModels(const mmcVarSet& Xi)
 {
+    const dictionary sc = this->cloudProperties().subOrEmptyDict("secondConditioning");
+    if (sc.lookupOrDefault("enabled", false))
+    {
+        if (sc.found("referenceDiffusionRate"))
+        {
+            const scalar rate = readScalar(sc.lookup("referenceDiffusionRate"));
+            if (sc.found("beta") || !(rate >= 0 && std::isfinite(rate)) || secondCondTauOU_ <= 0)
+                FatalErrorInFunction << "Use beta OR referenceDiffusionRate >= 0, with positive tauOU" << exit(FatalError);
+            secondCondBeta_ = sqrt(rate*secondCondTauOU_);
+        }
+        secondCondMaxSourceStep_ = sc.lookupOrDefault<scalar>("maxPhiSourceStep", 0.05);
+        secondCondAgeRate_ = sc.lookupOrDefault<scalar>("burnedAgeRate", 0);
+        secondCondAgeThreshold_ = sc.lookupOrDefault<scalar>("burnedAgeThreshold", 0.99);
+        if (!(secondCondR_ > 0 && secondCondR_ <= 1 && secondCondBeta_ >= 0
+            && secondCondTauOU_ >= 0 && (secondCondBeta_ == 0 || secondCondTauOU_ > 0)
+            && secondCondTb_ > secondCondTu_ && secondCondAPhi_ >= 0 && secondCondZPhi_ >= 0
+            && secondCondMaxSourceStep_ > 0 && secondCondMaxSourceStep_ <= 1
+            && secondCondAgeRate_ >= 0 && secondCondAgeThreshold_ >= 0 && secondCondAgeThreshold_ < 1)
+            || !std::isfinite(secondCondR_ + secondCondBeta_ + secondCondTauOU_
+                + secondCondTb_ + secondCondTu_ + secondCondAPhi_ + secondCondZPhi_
+                + secondCondAgeRate_ + secondCondMaxSourceStep_))
+            FatalErrorInFunction << "Invalid secondConditioning parameters: require 0<R<=1, beta>=0, "
+                << "positive tauOU when beta>0, Tb>Tu, A_phi/Z_phi>=0, "
+                << "0<maxPhiSourceStep<=1 and nonnegative aging rate." << exit(FatalError);
+        const int seeds[] = {int(sc.lookupOrDefault<label>("randomSeed", 5489)),
+                             int(Pstream::myProcNo()), 139691};
+        secondCondRandom_.RandomInitByArray(seeds, 3);
+        Info<< "Second conditioning: R=" << secondCondR_ << ", A_phi=" << secondCondAPhi_
+            << ", Z_phi=" << secondCondZPhi_ << ", beta=" << secondCondBeta_
+            << ", tauOU=" << secondCondTauOU_ << ", beta^2/tauOU="
+            << (secondCondTauOU_ > 0 ? sqr(secondCondBeta_)/secondCondTauOU_ : 0)
+            << ", maxPhiSourceStep=" << secondCondMaxSourceStep_ << nl;
+        if (secondCondAgeRate_ > 0)
+            WarningInFunction << "burnedAgeRate enables an additional age closure, not an equation "
+                << "specified by the paper; validate it against slow-species kinetics." << nl;
+    }
     mixingModel_.reset
     (
         CloudMixingModel<MixingPopeCloud<CloudType> >::New
@@ -41,6 +77,10 @@ void Foam::MixingPopeCloud<CloudType>::setModels(const mmcVarSet& Xi)
             Xi //Since reference variables are inside submodel!!!
         ).ptr()
     );
+
+    if (sc.lookupOrDefault("enabled", false)
+        && word(this->subModelProperties().lookup("mixingModel")) != "MMCcurl")
+        FatalErrorInFunction << "Second conditioning currently requires MMCcurl at the dense level" << exit(FatalError);
 
     // Conditionally construct the second-conditioning mixing model.
     // The secondConditioning sub-dictionary must be present in cloudProperties
@@ -57,6 +97,9 @@ void Foam::MixingPopeCloud<CloudType>::setModels(const mmcVarSet& Xi)
                 this->subModelProperties().lookup("secondCondMixingModel")
             );
  
+            if (scModelType != "secondCondMMCcurl")
+                FatalErrorInFunction << "Supported sparse second-conditioning model is secondCondMMCcurl" << exit(FatalError);
+
             auto cstrIter =
                 CloudMixingModel<MixingPopeCloud<CloudType>>::
                     dictionaryConstructorTablePtr_->find(scModelType);
@@ -92,6 +135,7 @@ void Foam::MixingPopeCloud<CloudType>::cloudReset(MixingPopeCloud<CloudType>& c)
     mixingModel_.reset(c.mixingModel_.ptr());
 
     secondCondMixingModel_.reset(c.secondCondMixingModel_.ptr());
+    secondCondRandom_ = c.secondCondRandom_;
     
 }
 
@@ -305,28 +349,19 @@ Foam::MixingPopeCloud<CloudType>::~MixingPopeCloud()
 template<class CloudType>
 void Foam::MixingPopeCloud<CloudType>::updatePhiReaction(const scalar deltaT)
 {
-    // Apply the progress-variable reaction source W(φ) = A·(1−φ)·exp[Z·(φ−1)]
-    // to every particle for one time step.  Applied to all particles (not just
-    // flagged ones) so that φ is consistent across the entire cloud before
-    // the second conditioning runs.
-    const scalar A = secondCondAPhi_;
-    const scalar Z = secondCondZPhi_;
- 
-    if (A <= SMALL)
-        return;  // no-op when reaction coefficient is zero
- 
     forAllIters(*this, iter)
     {
-        scalar& phi = iter().phi();
-        phi += deltaT * A * (1.0 - phi) * Foam::exp(Z * (phi - 1.0));
-        phi  = max(0.0, min(1.0, phi));
-
-	// For non-subset particles (omegaOU==0 always), phiModified = phi.
-        // For subset particles, updateOUProcess() recomputes phiModified
-        // as phi * exp(beta * omegaOU) immediately after this call.
-        if (iter().secondCondFlag() != 1)
-            iter().phiModified() = phi;
-
+        try
+        {
+            iter().phi() = secondConditioningNumerics::progressReaction
+            (
+                iter().phi(), deltaT, secondCondAPhi_, secondCondZPhi_, secondCondMaxSourceStep_
+            );
+        }
+        catch (const std::exception& error)
+        {
+            FatalErrorInFunction << error.what() << exit(FatalError);
+        }
     }
 }
  
@@ -334,27 +369,32 @@ void Foam::MixingPopeCloud<CloudType>::updatePhiReaction(const scalar deltaT)
 template<class CloudType>
 void Foam::MixingPopeCloud<CloudType>::updateOUProcess(const scalar deltaT)
 {
-    // For each particle flagged for second conditioning:
-    //   1. Advance ω_OU using the exact discrete OU update.
-    //   2. Recompute φ° = φ·exp(β·ω_OU) so buildParticleList() in
-    //      secondCondMixing().Smix() sees the current modified variable.
-    const scalar beta  = secondCondBeta_;
-    const scalar tauOU = secondCondTauOU_;
- 
-    if (tauOU <= SMALL)
-        return;
- 
     forAllIters(*this, iter)
     {
         if (iter().secondCondFlag() == 1)
         {
-            const scalar xi = this->rndGen_.Normal(0, 1);
-            iter().omegaOU() = OUStateUpdate
+            if (secondCondBeta_ > 0)
+                iter().omegaOU() = OUStateUpdate(iter().omegaOU(), deltaT,
+                    secondCondTauOU_, secondCondRandom_.Normal(0, 1));
+            else
+                iter().omegaOU() = 0;
+        }
+        // Optional accumulated residence time above a smooth burned-state gate.
+        // This is a declared extension, not a calibrated closure from the paper.
+        if (secondCondAgeRate_ > 0)
+            iter().burnedAge() += deltaT*max(scalar(0),
+                (iter().phi()-secondCondAgeThreshold_)/(1-secondCondAgeThreshold_));
+        try
+        {
+            iter().phiModified() = secondConditioningNumerics::modifiedProgress
             (
-                iter().omegaOU(), deltaT, tauOU, xi
+                iter().phi(), secondCondBeta_, iter().omegaOU(),
+                secondCondAgeRate_*iter().burnedAge()
             );
-            iter().phiModified() =
-                iter().phi() * Foam::exp(beta * iter().omegaOU());
+        }
+        catch (const std::exception& error)
+        {
+            FatalErrorInFunction << error.what() << exit(FatalError);
         }
     }
 }
@@ -388,37 +428,7 @@ void Foam::MixingPopeCloud<CloudType>::setParticleProperties
 
 
     // Assign second-conditioning subset flag based on fraction R
-    particle.secondCondFlag() =
-        (secondCondR_ > 0 && this->rndGen_.Random() < secondCondR_) ? 1 : 0;
- 
-    // Initialize progress variable from particle temperature
-    // phi = (T - Tu) / (Tb - Tu), clamped to [0, 1]
-    {
-        const scalar dT = secondCondTb_ - secondCondTu_;
-        if (dT > SMALL)
-        {
-            particle.phi() =
-                max(0.0, min(1.0, (particle.T() - secondCondTu_) / dT));
-        }
-        else
-        {
-            particle.phi() = 0.0;
-        }
-    }
- 
-//    particle.phiModified() = particle.phi();
-
-    // Initialise omegaOU from the OU stationary distribution N(0,1) for
-    // flagged (subset) particles only; non-subset particles never get
-    // OU-updated downstream so their omegaOU stays at 0.
-    if (particle.secondCondFlag() == 1)
-    {
-        particle.omegaOU() = this->rndGen_.Normal(0, 1);
-    }
- 
-    particle.phiModified() =
-        particle.phi() * Foam::exp(secondCondBeta_ * particle.omegaOU());
-
+    initializeSecondConditioningState(particle);
 
     label numXiR = mixing().numXiR();
 
@@ -449,6 +459,10 @@ void Foam::MixingPopeCloud<CloudType>::setEulerianStatistics()
         this->eulerianStats().newProperty("dx",dim);
     }
     
+    for (const word key : {word("phi"), word("phiModified"), word("omegaOU"), word("secondCondFlag"), word("burnedAge")})
+        if (this->eulerianStatsDict().found(key))
+            this->eulerianStats().newProperty(key, key == "burnedAge" ? dimTime : dimless);
+
     //- statistics of reference variables (mixing distances)
     forAll(this->mixing().XiRNames(),XiRI)
     {
@@ -485,6 +499,16 @@ void Foam::MixingPopeCloud<CloudType>::updateEulerianStatistics()
             
         if (this->eulerianStatsDict().found("dx"))
             this->eulerianStats().calculate("dx",iter().wt(),iter().dx());
+        if (this->eulerianStatsDict().found("phi"))
+            this->eulerianStats().calculate("phi",iter().wt(),iter().phi());
+        if (this->eulerianStatsDict().found("phiModified"))
+            this->eulerianStats().calculate("phiModified",iter().wt(),iter().phiModified());
+        if (this->eulerianStatsDict().found("burnedAge"))
+            this->eulerianStats().calculate("burnedAge",iter().wt(),iter().burnedAge());
+        if (this->eulerianStatsDict().found("secondCondFlag"))
+            this->eulerianStats().calculate("secondCondFlag",iter().wt(),scalar(iter().secondCondFlag()));
+        if (iter().secondCondFlag() == 1 && this->eulerianStatsDict().found("omegaOU"))
+            this->eulerianStats().calculate("omegaOU",iter().wt(),iter().omegaOU());
     }
 }
 
@@ -502,3 +526,22 @@ void Foam::MixingPopeCloud<CloudType>::writeFields() const
 
 // ************************************************************************* //
 
+
+
+template<class CloudType>
+void Foam::MixingPopeCloud<CloudType>::initializeSecondConditioningState(particleType& particle)
+{
+    particle.secondCondFlag() = 0;
+    particle.omegaOU() = 0;
+    particle.phi() = 0;
+    particle.phiModified() = 0;
+    particle.burnedAge() = 0;
+    if (!secondCondMixingEnabled()) return;
+    particle.secondCondFlag() = secondCondRandom_.Random() < secondCondR_ ? 1 : 0;
+    particle.phi() = max(scalar(0), min(scalar(1),
+        (particle.T()-secondCondTu_)/(secondCondTb_-secondCondTu_)));
+    if (particle.secondCondFlag() == 1 && secondCondBeta_ > 0)
+        particle.omegaOU() = secondCondRandom_.Normal(0, 1);
+    particle.phiModified() = secondConditioningNumerics::modifiedProgress
+        (particle.phi(), secondCondBeta_, particle.omegaOU());
+}

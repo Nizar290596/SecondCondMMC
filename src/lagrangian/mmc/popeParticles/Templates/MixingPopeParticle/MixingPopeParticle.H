@@ -137,6 +137,7 @@ protected:
  
                 //- Subset flag: 0 = regular particle, 1 = second-cond subset
                 label secondCondFlag_;
+                mutable scalar secondCondFlagSample_ = 0;
  
                 //- Ornstein-Uhlenbeck process state variable ω_OU
                 scalar omegaOU_;
@@ -146,6 +147,7 @@ protected:
  
                 //- Modified progress variable φ° = φ * exp(β * ω_OU)
                 scalar phiModified_;
+                scalar burnedAge_;
 public:
 
     // Static data members
@@ -164,6 +166,7 @@ public:
 	  + " omegaOU"
 	  + " phi"
 	  + " phiModified"
+          + " burnedAge"
         );
 
 
@@ -262,6 +265,7 @@ public:
  
             //- Return const access to modified progress variable
             inline scalar phiModified() const;
+            inline scalar burnedAge() const { return burnedAge_; }
 
         // Edit
             
@@ -291,6 +295,7 @@ public:
  
             //- Return reference to modified progress variable
             inline scalar& phiModified();
+            inline scalar& burnedAge() { return burnedAge_; }
             
             //- Set the static member variables 
             template<class CloudType>

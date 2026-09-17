@@ -1,0 +1,11 @@
+#!/bin/sh
+set -eu
+repo=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+sc_test_dir=$(mktemp -d)
+trap 'rm -rf "$sc_test_dir"' EXIT HUP INT TERM
+${CXX:-g++} -std=c++17 -O2 -Wall -Wextra -Werror -fsanitize=undefined \
+    -I"$repo/src/lagrangian/mmc/submodels/Mixing" \
+    "$repo/tests/secondConditioning/test_numerics.cpp" -o "$sc_test_dir/numerics"
+"$sc_test_dir/numerics"
+python3 "$repo/tests/secondConditioning/test_pairing.py"
+python3 "$repo/tests/secondConditioning/test_reference.py"

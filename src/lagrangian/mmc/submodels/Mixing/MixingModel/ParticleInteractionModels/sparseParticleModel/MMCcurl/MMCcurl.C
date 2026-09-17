@@ -43,7 +43,7 @@ Foam::MMCcurl<CloudType>::MMCcurl
 
     CL_(this->coeffDict().lookupOrDefault("CL", 0.5)),
 
-    CE_(this->coeffDict().lookupOrDefault("CE", 0.1)),
+    CE_(this->readMixingConstant()),
 
     beta_(this->coeffDict().lookupOrDefault("beta", 3)),
 
@@ -51,6 +51,10 @@ Foam::MMCcurl<CloudType>::MMCcurl
 
     meanTimeScale_(this->coeffDict().lookup("meanTimeScale"))
 {
+    if (this->owner().cloudProperties().subOrEmptyDict("secondConditioning").template lookupOrDefault<bool>("enabled", false)
+        && this->mixingExtentModel_ != "exponential")
+        FatalErrorInFunction << "Dense progress conditioning requires the continuous-limit exponential extent. "
+            << "Use modifiedCurl for the sparse species stage." << exit(FatalError);
     printInfo();
 }
 
@@ -65,12 +69,18 @@ Foam::MMCcurl<CloudType>::MMCcurl
 
     CL_(this->coeffDict().lookupOrDefault("CL", 0.5)),
 
-    CE_(this->coeffDict().lookupOrDefault("CE", 0.1)),
+    CE_(this->readMixingConstant()),
 
     beta_(this->coeffDict().lookupOrDefault("beta", 3)),
 
-    aISO_(this->coeffDict().lookupOrDefault("aISO",true))
+    aISO_(cm.aISO_),
+
+    meanTimeScale_(cm.meanTimeScale_)
 {
+    if (this->owner().cloudProperties().subOrEmptyDict("secondConditioning").template lookupOrDefault<bool>("enabled", false)
+        && this->mixingExtentModel_ != "exponential")
+        FatalErrorInFunction << "Dense progress conditioning requires the continuous-limit exponential extent. "
+            << "Use modifiedCurl for the sparse species stage." << exit(FatalError);
     printInfo();
 }
 
@@ -127,7 +137,11 @@ void Foam::MMCcurl<CloudType>::mixpair
 
         //- Compute mixing time scales for particle p
 
-        if (aISO_)   //aISO mixing time scale
+        if (this->mixingTimeScale_ == "prescribed")
+        {
+            tauP = tauQ = this->prescribedTauMix_;
+        }
+        else if (this->mixingTimeScale_ == "aISO")   //aISO mixing time scale
         {
             scalar A = 
             (
@@ -141,7 +155,7 @@ void Foam::MMCcurl<CloudType>::mixpair
                 qEulFields.D() + qEulFields.Dt()
             );
 
-            if( A < VSMALL)
+            if( A < VSMALL || pEulFields.vb() <= VSMALL)
                 tauP = 1e30;
             else
             {
@@ -150,7 +164,7 @@ void Foam::MMCcurl<CloudType>::mixpair
 		tauP = (1.0 / pEulFields.vb()) * (sqr(pEulFields.DeltaE()) / (CE_*A));
             }
 
-            if( B < VSMALL )
+            if( B < VSMALL || qEulFields.vb() <= VSMALL )
                 tauQ = 1e30;
             else
             {
@@ -210,7 +224,7 @@ void Foam::MMCcurl<CloudType>::mixpair
                 tauMix = min(tauP,tauQ);
                 //tauMix = max(tauP,tauQ);
 
-            scalar mixExtent = 1.0 - exp(-deltaT / (tauMix + VSMALL));
+            scalar mixExtent = this->pairMixingExtent(pEulFields, qEulFields, deltaT, tauMix);
 
             
 //            if (!this->owner().sootingFlame())
@@ -225,10 +239,17 @@ void Foam::MMCcurl<CloudType>::mixpair
                 const scalar wtSum = p.wt() + q.wt();
                 if (wtSum > VSMALL)
                 {
+                    const scalar contrast = p.phi()-q.phi();
+                    if (Pstream::myProcNo() == min(pEulFields.processorIndex(), qEulFields.processorIndex()))
+                        this->weightedProgressVarianceLoss_ += p.wt()*q.wt()/wtSum
+                            *sqr(contrast)*(2*mixExtent-sqr(mixExtent));
                     const scalar phiAv =
                         (p.wt()*p.phi() + q.wt()*q.phi())/wtSum;
                     p.phi() += mixExtent*(phiAv - p.phi());
                     q.phi() += mixExtent*(phiAv - q.phi());
+                    const scalar ageAv = (p.wt()*p.burnedAge()+q.wt()*q.burnedAge())/wtSum;
+                    p.burnedAge() += mixExtent*(ageAv-p.burnedAge());
+                    q.burnedAge() += mixExtent*(ageAv-q.burnedAge());
                 }
 	    }
 	    else if (!this->owner().sootingFlame())
@@ -380,7 +401,7 @@ void Foam::MMCcurl<CloudType>::printInfo()
          << token::TAB << "CL:      " << this->CL_<< nl
          << token::TAB << "CE:      " << this->CE_<< nl
          << token::TAB << "beta:    " << this->beta_<< nl
-         << token::TAB << "aISO:    " << this->aISO_<< nl
+         << token::TAB << "Timescale: " << this->mixingTimeScale_ << nl
          << token::TAB << "---------------------------"<< endl;
     Info << token::TAB << "General Mixing Rules:    " << nl
          << token::TAB << "Particle pairing method: "  

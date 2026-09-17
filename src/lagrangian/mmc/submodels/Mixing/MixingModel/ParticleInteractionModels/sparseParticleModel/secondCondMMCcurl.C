@@ -42,24 +42,13 @@ Foam::secondCondMMCcurl<CloudType>::secondCondMMCcurl
 :
     mixParticleModel<CloudType>(dict, owner, typeName, Xi),
  
-    CL_(this->coeffDict().lookupOrDefault("CL", 0.5)),
- 
-    CE_(this->coeffDict().lookupOrDefault("CE", 0.1)),
+    CE_(this->readMixingConstant()),
+    includeShadowPositions_(this->coeffDict().lookupOrDefault("includeShadowPositions", true)),
+    diagnosticInterval_(this->coeffDict().lookupOrDefault("diagnosticInterval", label(100))),
  
     meanTimeScale_(this->coeffDict().lookup("meanTimeScale"))
 {
-    // Override the base-class Xii_ with the 4D second-conditioning
-    // normalisation. The base populates Xii_ from the first-conditioning
-    // XiRNames_ (shadow positions only), which leaves phiModified without
-    // its own normaliser and excludes xi_z from the k-d tree splitting.
-    // Here we read the 4 explicit keys for the
-    // (phiModified, xi_x, xi_y, xi_z) reference space.
-    const dictionary& Xim = this->coeffDict().subDict("Xim_i");
-    this->Xii_.setSize(4);
-    this->Xii_[0] = readScalar(Xim.lookup("phiMod_m"));
-    this->Xii_[1] = readScalar(Xim.lookup("sPx_m"));
-    this->Xii_[2] = readScalar(Xim.lookup("sPy_m"));
-    this->Xii_[3] = readScalar(Xim.lookup("sPz_m"));
+    configureReferenceSpace();
 
     printInfo();
 }
@@ -72,20 +61,12 @@ Foam::secondCondMMCcurl<CloudType>::secondCondMMCcurl
 )
 :
     mixParticleModel<CloudType>(cm),
-    CL_(cm.CL_),
     CE_(cm.CE_),
+    includeShadowPositions_(cm.includeShadowPositions_),
+    diagnosticInterval_(cm.diagnosticInterval_),
     meanTimeScale_(cm.meanTimeScale_)
 {
-    // Mirror the primary-constructor override of the base-class Xii_ so
-    // a cloned model also carries the 4D normalisation. The base copy
-    // constructor re-runs getXiNormalisation() which yields only the 3
-    // first-conditioning entries.
-    const dictionary& Xim = this->coeffDict().subDict("Xim_i");
-    this->Xii_.setSize(4);
-    this->Xii_[0] = readScalar(Xim.lookup("phiMod_m"));
-    this->Xii_[1] = readScalar(Xim.lookup("sPx_m"));
-    this->Xii_[2] = readScalar(Xim.lookup("sPy_m"));
-    this->Xii_[3] = readScalar(Xim.lookup("sPz_m"));
+    configureReferenceSpace();
 
     printInfo();
 }
@@ -130,26 +111,19 @@ void Foam::secondCondMMCcurl<CloudType>::buildParticleList()
         eulerianFields.processorIndex() = Pstream::myProcNo();
         eulerianFields.position()       = pos;
  
-        // 4D reference space for the k-d tree:
-        //   XiR[0] = phi_modified  (tight normalisation → dominant split axis)
-        //   XiR[1] = xi_x          (shadow position x, from particle XiR()[0])
-        //   XiR[2] = xi_y          (shadow position y, from particle XiR()[1])
-        //   XiR[3] = xi_z          (shadow position z, from particle XiR()[2])
-        //
-        // The particle's XiR() field holds the first-conditioning reference
-        // variables (shadow positions) set by the base solver.  We read them
-        // positionally here; their names are not needed.
-        eulerianFields.XiR().resize(4);
+        eulerianFields.XiR().resize(this->Xii_.size());
         eulerianFields.XiR()[0] = iter().phiModified();
-        eulerianFields.XiR()[1] = iter().XiR()[0];
-        eulerianFields.XiR()[2] = iter().XiR()[1];
-        eulerianFields.XiR()[3] = iter().XiR()[2];
- 
-        // magSqrRefVar is not used in the aISO timescale; set to 4 zeros
-        eulerianFields.magSqrRefVar().resize(4, 0.0);
- 
+        if (includeShadowPositions_)
+        {
+            const auto& index = this->XiR_.rVarInXiR();
+            eulerianFields.XiR()[1] = iter().XiR()[index["sPx"]];
+            eulerianFields.XiR()[2] = iter().XiR()[index["sPy"]];
+            eulerianFields.XiR()[3] = iter().XiR()[index["sPz"]];
+        }
+        eulerianFields.magSqrRefVar().resize(this->Xii_.size(), 0.0);
+
         // Interpolate Eulerian transport properties at the particle location
-        eulerianFields.Rand()   = 0.0;
+        eulerianFields.Rand()   = this->owner().rndGen().Random();
         eulerianFields.DEff()   = DEff_intp_.interpolate(pos, cellI, faceI);
         eulerianFields.D()      = D_intp_   .interpolate(pos, cellI, faceI);
         eulerianFields.Dt()     = Dt_intp_  .interpolate(pos, cellI, faceI);
@@ -160,117 +134,61 @@ void Foam::secondCondMMCcurl<CloudType>::buildParticleList()
         this->eulerianFieldDataList_.append(std::move(eulerianFields));
     }
  
-    // Pair the flagged particles locally (no parallel exchange for second
-    // conditioning — consistent with the local-pairing-only design note)
-    this->findPairs(this->eulerianFieldDataList_, this->particlePairs_);
-
-    // -- Diagnostics ---------------------------------------------------------
-    // Particle counts: per-process and global flagged-particle totals,
-    //                  plus the number of pairs / triples produced.
-    // Split-axis usage: how many times each XiR axis was selected as the
-    //                   k-d tree split axis during findPairs(). Reveals
-    //                   whether the tree is dominated by phi or by the
-    //                   shadow-position coordinates.
+    const label nLocal = this->particleList_.size();
+    const label nAllLocal = this->owner().size();
+    scalar flaggedWeight = 0, totalWeight = 0, phiModifiedSecondMoment = 0;
+    forAllIters(this->owner(), particle)
     {
-        const label nLocal = this->particleList_.size();
-        label nGlobal = nLocal;
+        totalWeight += particle().wt();
+        if (particle().secondCondFlag() == 1)
+        {
+            flaggedWeight += particle().wt();
+            phiModifiedSecondMoment += particle().wt()*sqr(particle().phiModified());
+        }
+    }
+    if (Pstream::parRun()
+        && this->pairingMethod_.method() != particlePairingMethod::localPairing)
+        this->correctParticleListParallel();
+    else
+        this->findPairs(this->eulerianFieldDataList_, this->particlePairs_);
+
+    if (this->owner().mesh().time().timeIndex() % diagnosticInterval_ == 0)
+    {
+        label nGlobal = nLocal, participating = 0;
+        scalar maxDx = 0, maxDphi = 0;
         reduce(nGlobal, sumOp<label>());
-
-        label nPairs   = 0;
-        label nTriples = 0;
-        for (const List<label>& pr : this->particlePairs_)
+        label nAll = nAllLocal;
+        reduce(nAll, sumOp<label>());
+        reduce(flaggedWeight, sumOp<scalar>());
+        reduce(totalWeight, sumOp<scalar>());
+        reduce(phiModifiedSecondMoment, sumOp<scalar>());
+        for (const auto& group : this->particlePairs_)
         {
-            if (pr.size() == 2) ++nPairs;
-            else if (pr.size() == 3) ++nTriples;
-        }
-        label nPairsGlobal   = nPairs;
-        label nTriplesGlobal = nTriples;
-        reduce(nPairsGlobal,   sumOp<label>());
-        reduce(nTriplesGlobal, sumOp<label>());
-
-        // Sum the per-axis split counts across processors so the histogram
-        // reflects the global picture.
-        List<label> hist = this->splitAxisHistogram();
-        forAll(hist, i)
-        {
-            label v = hist[i];
-            reduce(v, sumOp<label>());
-            hist[i] = v;
-        }
-
-        label totalSplits = 0;
-        forAll(hist, i) totalSplits += hist[i];
-
-        Info<< "[secondCondMMCcurl] flagged particles: "
-            << nGlobal << " global"
-            << " (local rank0 = " << nLocal << ");"
-            << " pairs = " << nPairsGlobal
-            << ", triples = " << nTriplesGlobal << nl;
-
-        Info<< "[secondCondMMCcurl] split-axis histogram (global):"
-            << " total splits = " << totalSplits << nl;
-
-        forAll(hist, i)
-        {
-            const word axisName =
-                (i == 0) ? word("phiModified")
-              : (i == 1) ? word("xi_x")
-              : (i == 2) ? word("xi_y")
-              : (i == 3) ? word("xi_z")
-              :            word("XiR[" + Foam::name(i) + "]");
-
-            const scalar pct =
-                (totalSplits > 0)
-                  ? 100.0*scalar(hist[i])/scalar(totalSplits)
-                  : 0.0;
-
-            Info<< "    axis " << i << " (" << axisName << "): "
-                << hist[i] << "  ("
-                << pct << " %)" << nl;
-        }
-        Info<< endl;
-
-	// Also append one tab-separated row per call to
-        //   <case>/postProcessing/secondCondMMCcurl.log
-        // so the diagnostics can be plotted / grepped without trawling
-        // through the solver's main log. Only the master process writes.
-        if (Pstream::master())
-        {
-            const Time& runTime = this->owner().mesh().time();
-
-            const fileName logDir  = runTime.path()/"postProcessing";
-            const fileName logPath = logDir/"secondCondMMCcurl.log";
-
-            mkDir(logDir);
-
-            // Header on first write only (empty / missing file)
-            const bool writeHeader = !Foam::isFile(logPath);
-
-            std::ofstream os
-            (
-                logPath.c_str(),
-                std::ios::out | std::ios::app
-            );
-
-            if (os.is_open())
+            label firstRank = Pstream::nProcs();
+            for (label i : group)
+                firstRank = min(firstRank, this->eulerianFieldDataList_[i].processorIndex());
+            if (firstRank != Pstream::myProcNo()) continue;
+            participating += group.size();
+            forAll(group, i) for (label j=i+1; j<group.size(); ++j)
             {
-                if (writeHeader)
-                {
-                    os << "# time\tnFlagged\tnPairs\tnTriples"
-                       << "\tphiMod\txi_x\txi_y\txi_z"
-                       << "\ttotalSplits\n";
-                }
-
-                os << runTime.value()
-                   << '\t' << nGlobal
-                   << '\t' << nPairsGlobal
-                   << '\t' << nTriplesGlobal;
-
-                forAll(hist, i) os << '\t' << hist[i];
-
-                os << '\t' << totalSplits << '\n';
+                const auto& p = this->eulerianFieldDataList_[group[i]];
+                const auto& q = this->eulerianFieldDataList_[group[j]];
+                maxDx = max(maxDx, mag(p.position()-q.position()));
+                maxDphi = max(maxDphi, mag(p.XiR()[0]-q.XiR()[0]));
             }
         }
+        reduce(participating, sumOp<label>());
+        reduce(maxDx, maxOp<scalar>());
+        reduce(maxDphi, maxOp<scalar>());
+        Info<< "secondCondMMCcurl: unique flagged=" << nGlobal
+            << "/" << nAll << ", flagged mass fraction=" << flaggedWeight/max(totalWeight, VSMALL)
+            << ", paired=" << participating << ", max pair dx=" << maxDx
+            << ", max pair deltaPhiModified=" << maxDphi << nl;
+        const scalar tau = this->owner().secondCondTauOU();
+        if (tau > 0 && flaggedWeight > VSMALL)
+            Info<< "OU reference diffusion: weighted mean D_phiModified="
+                << sqr(this->owner().secondCondBeta())/tau*phiModifiedSecondMoment/flaggedWeight
+                << " [1/s]; compare with Nphi using a consistent conditioning convention" << nl;
     }
 }
  
@@ -296,14 +214,17 @@ void Foam::secondCondMMCcurl<CloudType>::mixpair
     const scalar A = pEulFields.D() + pEulFields.Dt();
     const scalar B = qEulFields.D() + qEulFields.Dt();
  
-    if (A > VSMALL)
+    if (A > VSMALL && pEulFields.vb() > VSMALL)
         tauP = (1.0 / pEulFields.vb())
              * (sqr(pEulFields.DeltaE()) / (CE_ * A));
  
-    if (B > VSMALL)
+    if (B > VSMALL && qEulFields.vb() > VSMALL)
         tauQ = (1.0 / qEulFields.vb())
              * (sqr(qEulFields.DeltaE()) / (CE_ * B));
  
+    if (this->mixingTimeScale_ == "prescribed")
+        tauP = tauQ = this->prescribedTauMix_;
+
     if (tauP >= 1e30 || tauQ >= 1e30)
         return;
  
@@ -318,7 +239,7 @@ void Foam::secondCondMMCcurl<CloudType>::mixpair
     else
         tauMix = min(tauP, tauQ);
  
-    const scalar mixExtent = 1.0 - Foam::exp(-deltaT / (tauMix + VSMALL));
+    const scalar mixExtent = this->pairMixingExtent(pEulFields, qEulFields, deltaT, tauMix);
  
     // Set diagnostic distance fields on the particles
     scalar dx_pq = Foam::sqrt
@@ -336,7 +257,7 @@ void Foam::secondCondMMCcurl<CloudType>::mixpair
         q.dXiR()[i] = p.dXiR()[i];
     }
  
-    // Mix species-only: Y, T, hA — NOT phi, XiR, XiC, or secondCondFlag
+    // Sparse mixing changes thermochemical state, not the dense reference.
     mixSpeciesOnly(p, q, mixExtent);
 }
  
@@ -360,19 +281,23 @@ void Foam::secondCondMMCcurl<CloudType>::mixSpeciesOnly
         q.hA() = q.hA() + mixExtent * (hAv - q.hA());
     }
  
-    // Mix temperature T
-    {
-        scalar TAv = (p.wt() * p.T() + q.wt() * q.T()) / wtSum;
-        p.T() = p.T() + mixExtent * (TAv - p.T());
-        q.T() = q.T() + mixExtent * (TAv - q.T());
-    }
- 
     // Mix species Y
     {
         scalarField YAv = (p.wt() * p.Y() + q.wt() * q.Y()) / wtSum;
         p.Y() = p.Y() + mixExtent * (YAv - p.Y());
         q.Y() = q.Y() + mixExtent * (YAv - q.Y());
     }
+    // Mixture fraction and other transported coupling scalars must follow
+    // species mixing; the dense reference phi and shadow coordinates do not.
+    forAll(p.XiC(), i)
+    {
+        const scalar mean = (p.wt()*p.XiC()[i] + q.wt()*q.XiC()[i])/wtSum;
+        p.XiC()[i] += mixExtent*(mean-p.XiC()[i]);
+        q.XiC()[i] += mixExtent*(mean-q.XiC()[i]);
+    }
+    // Temperature is derived from the mixed composition and enthalpy.
+    p.T() = this->owner().composition().particleMixture(p.Y()).THa(p.hA(), p.pc(), p.T());
+    q.T() = this->owner().composition().particleMixture(q.Y()).THa(q.hA(), q.pc(), q.T());
 }
  
  
@@ -405,17 +330,53 @@ template<class CloudType>
 void Foam::secondCondMMCcurl<CloudType>::printInfo()
 {
     Info<< "Mixing Model: " << this->modelType() << nl
-        << token::TAB << "Reference space: (phiModified, xi_x, xi_y, xi_z)" << nl
+        << token::TAB << "Reference space: "
+        << (includeShadowPositions_ ? "(phiModified,xi,x)" : "(phiModified,x)") << nl
         << token::TAB << "Particle filter: secondCondFlag == 1 only" << nl
-        << token::TAB << "k-d tree:        splits on XiR (ncond = 3+i, no physical coord)" << nl
-        << token::TAB << "Timescale:       aISO" << nl
-        << token::TAB << "CL:              " << CL_           << nl
+        << token::TAB << "Physical localization: " << this->physicalLocalization_ << nl
+        << token::TAB << "Pairing: " << this->pairingMethod_ << nl
+        << token::TAB << "Timescale: " << this->mixingTimeScale_ << nl
         << token::TAB << "CE:              " << CE_           << nl
         << token::TAB << "meanTimeScale:   " << meanTimeScale_ << nl
-        << token::TAB << "Mixes:           Y, T, hA  (NOT phi, XiR, XiC, secondCondFlag)"
+        << token::TAB << "Mixes: Y, hA, XiC; reconstructs T; preserves dense reference and selection"
         << endl;
 }
  
  
 // ************************************************************************* //
 
+
+
+template<class CloudType>
+void Foam::secondCondMMCcurl<CloudType>::configureReferenceSpace()
+{
+    const dictionary& d = this->coeffDict().subDict("Xim_i");
+    const bool legacy = d.found("phiModified_m");
+    const scalar phiScale = readScalar(d.lookup(d.found("phiMod_m") ? "phiMod_m" : "phiModified_m"));
+    if (legacy && d.found("phiMod_m") && phiScale != readScalar(d.lookup("phiModified_m")))
+        FatalErrorInFunction << "Conflicting phiMod_m and phiModified_m" << exit(FatalError);
+    if (legacy) WarningInFunction << "phiModified_m is accepted as an alias; use phiMod_m." << nl;
+    this->Xii_.setSize(includeShadowPositions_ ? 4 : 1);
+    this->Xii_[0] = phiScale;
+    if (includeShadowPositions_)
+    {
+        wordList names(3);
+        names[0] = "sPx"; names[1] = "sPy"; names[2] = "sPz";
+        forAll(names, i)
+        {
+            if (!this->XiR_.rVarInXiR().found(names[i]))
+                FatalErrorInFunction << "Missing reference " << names[i] << exit(FatalError);
+            this->Xii_[i+1] = readScalar(d.lookup(names[i]+"_m"));
+        }
+    }
+    for (scalar scale : this->Xii_)
+        if (!(scale > 0 && std::isfinite(scale)))
+            FatalErrorInFunction << "All second-conditioning normalizations must be positive and finite" << exit(FatalError);
+    if (diagnosticInterval_ < 1)
+        FatalErrorInFunction << "diagnosticInterval must be >= 1" << exit(FatalError);
+    if (!this->physicalLocalization_)
+        WarningInFunction << "Physical localization is disabled; this omits the paper's x-space conditioning." << nl;
+    if (this->mixingTimeScale_ != "aISO" && this->mixingTimeScale_ != "prescribed")
+        FatalErrorInFunction << "Second conditioning supports aISO or prescribed timescales only" << exit(FatalError);
+    Info<< "Second reference normalizations: " << this->Xii_ << nl;
+}

@@ -25,6 +25,7 @@ License
 
 #include "MixingPopeParticle.H"
 #include "IOstreams.H"
+#include <cmath>
 
 // * * * * * * * * * * * * * * Static Data Members * * * * * * * * * * * * * //
 
@@ -62,7 +63,8 @@ Foam::MixingPopeParticle<ParticleType>::MixingPopeParticle
     secondCondFlag_(0),
     omegaOU_(0.0),
     phi_(0.0),
-    phiModified_(0.0)
+    phiModified_(0.0),
+    burnedAge_(0.0)
 {
     if (readFields)
     {
@@ -72,7 +74,8 @@ Foam::MixingPopeParticle<ParticleType>::MixingPopeParticle
 	    >> secondCondFlag_
             >> omegaOU_
 	    >> phi_
-            >> phiModified_;
+            >> phiModified_
+            >> burnedAge_;
     }
 
     initStatisticalSampling();
@@ -117,39 +120,52 @@ void Foam::MixingPopeParticle<ParticleType>::readFields
     
     setStaticProperties(c);
 
-    IOField<scalar> dx(c.newIOobject("dx", IOobject::MUST_READ));
+    IOField<scalar> dx(c.newIOobject("dx", IOobject::READ_IF_PRESENT), scalarField(c.size(), 0.0));
     c.checkFieldIOobject(c, dx);
-
-    IOField<label>  secondCondFlag
-    (
-        c.newIOobject("secondCondFlag", IOobject::MUST_READ)
-    );
+    const dictionary sc = c.cloudProperties().subOrEmptyDict("secondConditioning");
+    const word restartMode = sc.lookupOrDefault<word>("restartMode", "resume");
+    if (restartMode != "resume" && restartMode != "initialize")
+        FatalErrorInFunction << "secondConditioning/restartMode must be resume or initialize" << exit(FatalError);
+    const bool initialize = c.secondCondMixingEnabled() && restartMode == "initialize";
+    const bool mustRead = c.secondCondMixingEnabled() && !initialize;
+    IOField<label> secondCondFlag(c.newIOobject("secondCondFlag",
+        mustRead ? IOobject::MUST_READ : IOobject::READ_IF_PRESENT), Field<label>(c.size(), label(0)));
+    IOField<scalar> omegaOU(c.newIOobject("omegaOU",
+        mustRead ? IOobject::MUST_READ : IOobject::READ_IF_PRESENT), scalarField(c.size(), 0.0));
+    IOField<scalar> phi(c.newIOobject("phi",
+        mustRead ? IOobject::MUST_READ : IOobject::READ_IF_PRESENT), scalarField(c.size(), 0.0));
+    IOField<scalar> phiModified(c.newIOobject("phiModified",
+        mustRead ? IOobject::MUST_READ : IOobject::READ_IF_PRESENT), scalarField(c.size(), 0.0));
+    IOField<scalar> burnedAge(c.newIOobject("burnedAge",
+        mustRead && sc.lookupOrDefault<scalar>("burnedAgeRate", 0) > 0
+            ? IOobject::MUST_READ : IOobject::READ_IF_PRESENT), scalarField(c.size(), 0.0));
     c.checkFieldIOobject(c, secondCondFlag);
- 
-    IOField<scalar> omegaOU(c.newIOobject("omegaOU", IOobject::MUST_READ));
-    c.checkFieldIOobject(c, omegaOU); 
-
-    IOField<scalar> phi(c.newIOobject("phi", IOobject::MUST_READ));
+    c.checkFieldIOobject(c, omegaOU);
     c.checkFieldIOobject(c, phi);
-
-    IOField<scalar> phiModified
-    (
-        c.newIOobject("phiModified", IOobject::MUST_READ)
-    );
     c.checkFieldIOobject(c, phiModified);
-
+    c.checkFieldIOobject(c, burnedAge);
     label i = 0;
     forAllIters(c, iter)
     {
         MixingPopeParticle<ParticleType>& p = iter();
-        p.dx_           = dx[i];
-	p.secondCondFlag_ = secondCondFlag[i];
-        p.omegaOU_        = omegaOU[i];
-	p.phi_            = phi[i];
-        p.phiModified_    = phiModified[i];
-        i++;
+        p.dx_ = dx[i];
+        p.secondCondFlag_ = secondCondFlag[i];
+        p.omegaOU_ = omegaOU[i];
+        p.phi_ = phi[i];
+        p.phiModified_ = phiModified[i];
+        p.burnedAge_ = burnedAge[i];
+        if (initialize) c.initializeSecondConditioningState(iter());
+        if (c.secondCondMixingEnabled() &&
+            (!(p.secondCondFlag_ == 0 || p.secondCondFlag_ == 1)
+             || !(p.phi_ >= 0 && p.phi_ <= 1 && p.phiModified_ >= 0 && p.burnedAge_ >= 0)
+             || !std::isfinite(p.omegaOU_ + p.phiModified_ + p.burnedAge_)))
+            FatalErrorInFunction << "Invalid second-conditioning restart state" << exit(FatalError);
+        ++i;
     }
-    
+    if (initialize)
+        Info<< "Initialized second-conditioning reference state and subset from restart temperature. "
+            << "Use restartMode resume for subsequent restarts." << nl;
+
     // Get names and sizes for each XiR...
     const wordList& XiRTypes = mixModel.XiRNames();
 
@@ -199,7 +215,7 @@ void Foam::MixingPopeParticle<ParticleType>::readFields
     }
 
     // Initialize the particle sampling
-    for (auto p : c)
+    for (auto& p : c)
     {
         p.initStatisticalSampling();
     }
@@ -239,6 +255,8 @@ void Foam::MixingPopeParticle<ParticleType>::writeFields
             c.newIOobject("phiModified", IOobject::NO_READ), np
         );
 
+        IOField<scalar> burnedAge(c.newIOobject("burnedAge", IOobject::NO_READ), np);
+
         label i = 0;
         forAllConstIters(c, iter)
         {
@@ -248,6 +266,7 @@ void Foam::MixingPopeParticle<ParticleType>::writeFields
             omegaOU[i]        = p.omegaOU_;
 	    phi[i]            = p.phi_;
             phiModified[i]    = p.phiModified_;
+            burnedAge[i]       = p.burnedAge_;
             i++;
         }
 
@@ -256,6 +275,7 @@ void Foam::MixingPopeParticle<ParticleType>::writeFields
         omegaOU.write();
 	phi.write();
         phiModified.write();
+        burnedAge.write();
         
         // Write the reference variables and distances in Xi space
         const wordList& XiRTypes = mixModel.XiRNames();
@@ -324,7 +344,8 @@ Foam::Ostream& Foam::operator<<
 	<< token::SPACE << p.secondCondFlag_
         << token::SPACE << p.omegaOU_
 	<< token::SPACE << p.phi_
-        << token::SPACE << p.phiModified_;
+        << token::SPACE << p.phiModified_
+        << token::SPACE << p.burnedAge_;
  
     // Check state of Ostream
     os.check

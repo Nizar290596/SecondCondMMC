@@ -79,16 +79,12 @@ int main(int argc, char *argv[])
     scalar b_vb_           = 1.4;
     scalar gamma_          = 0.5;
     scalar uPrimeCoeff_    = 1.0;
-    //scalar fixedsl0_       = 4.09E-01;//SC-Aachen
-    //scalar fixedsl0_	     = 0.0421251;//DC-Aachen //Original false
-    scalar fixedsl0_	   = 0.421251; //DC-Aachen adjusted 
-    //scalar fixedsl0_	   = 3.54E-01; //SC-Darmstadt
-    //scalar fixedsl0_	   = 3.66E-01;//DC-Darmstadt
-    //scalar fixeddeltal0_   = 3.62E-04;//SC-Aachen
-    //scalar fixeddeltal0_   = 0.0020896;//DC-Aachen //Original false
-    scalar fixeddeltal0_   = 0.0004; //DC Aachen adjusted
-    //scalar fixeddeltal0_   = 3.93E-04; //SC-Darmstadt
-    //scalar fixeddeltal0_   = 5.04E-04;//DC-Darmstadt
+    const dictionary flame = transportProperties_.subOrEmptyDict("premixedFlame");
+    const scalar fixedsl0_ = flame.lookupOrDefault<scalar>("laminarFlameSpeed", 0.421251);
+    const scalar fixeddeltal0_ = flame.lookupOrDefault<scalar>("laminarFlameThickness", 0.0004);
+    if (!(fixedsl0_ > 0 && fixeddeltal0_ > 0))
+        FatalErrorInFunction << "Positive laminar flame speed and thickness are required" << exit(FatalError);
+    Info<< "Laminar flame speed=" << fixedsl0_ << " m/s, thickness=" << fixeddeltal0_ << " m" << nl;
     scalar eps             = 1e-05;
     
     forAll(dynsl0,cellI)
@@ -102,6 +98,21 @@ int main(int argc, char *argv[])
         #include "readTimeControls.H"
         #include "compressibleCourantNo.H"
         #include "setDeltaT.H"
+        if (pdfMethodOn)
+        {
+            scalar scLimit = GREAT;
+            forAll(pSets, pSi)
+                if (pSets[pSi].secondCondMixingEnabled())
+                {
+                    const dictionary& sc = pSets[pSi].cloudProperties().subDict("secondConditioning");
+                    const scalar ratio = sc.lookupOrDefault<scalar>("maxOUTimeStepRatio", 0.1);
+                    if (!(ratio > 0 && ratio <= 1))
+                        FatalErrorInFunction << "Require 0 < maxOUTimeStepRatio <= 1" << exit(FatalError);
+                    if (pSets[pSi].secondCondBeta() > 0)
+                        scLimit = min(scLimit, ratio*pSets[pSi].secondCondTauOU());
+                }
+            if (runTime.deltaTValue() > scLimit) runTime.setDeltaT(scLimit);
+        }
 
         runTime++;
 

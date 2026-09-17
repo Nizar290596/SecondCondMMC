@@ -1,0 +1,111 @@
+FoamFile { version 2.0; format ascii; class dictionary; object cloudProperties; }
+// Dimensional validation settings derived from the supplied case.
+// This is an overlay, not a complete runnable case or a calibrated result.
+solution
+{
+    interpolationSchemes { U cellPoint; DEff cellPoint; rho cellPoint; gradRho cellPoint; f cellPoint; p cellPoint; }
+}
+particleManagement
+{
+    numCtlOn on;
+    Npc 20;
+    Nlo 18;
+    Nhi 25;
+    randomSeed 5489;
+    writeMassConsistencyCheck true;
+}
+subModels
+{
+    InflowBoundaryModel FreeStream;
+    compositionModel singlePhaseMixture;
+    printMoleFractions false;
+    radiationModel none;
+    sootModel none;
+    synthesisModel none;
+    thermoPhysicalCouplingModel KernelEstimation;
+    KernelEstimationCoeffs
+    {
+        nNearest 20;
+        minKernelParticles 2;
+        minEffectiveSamples 2;
+        rMax 0.0026676; // Initial support cap from the supplied r_i; requires a support study.
+        dfMax 0;
+        C2 0.1;
+        debug false;
+        diagnosticInterval 100;
+        fLow -0.5;
+        fHigh 2;
+        fm 0.03;
+        coupleEnthalpy true; // Requires ALL mechanism species below.
+    }
+    mixingModel MMCcurl;
+    MMCcurlCoeffs
+    {
+        r_i 0.0026676;
+        Xim_i { sPx_m 0.00004; sPy_m 0.00004; sPz_m 0.00004; }
+        physicalLocalization true;
+        retainedPairFraction 0.8;
+        maxPairDistance 0.0026676; // Numerical locality limit, not a calibrated flame parameter.
+        pairingMethod neighbourPairs;
+        mixingExtentModel exponential; // Continuous-limit dense reference evolution.
+        mixingTimeScale aISO;
+        CE 20; // Preserved from supplied case; verify the measured mixing time.
+        meanTimeScale false;
+        diagnosticInterval 100;
+    }
+    secondCondMixingModel secondCondMMCcurl;
+    secondCondMMCcurlCoeffs
+    {
+        r_i 0.0026676;
+        includeShadowPositions false; // Paper's (phiModified,x) option.
+        Xim_i { phiMod_m 0.04; }
+        physicalLocalization true;
+        retainedPairFraction 0.8;
+        maxPairDistance 0.0026676;
+        pairingMethod neighbourPairs;
+        mixingExtentModel modifiedCurl;
+        mixingTimeScale aISO;
+        CE 20;
+        meanTimeScale false;
+        diagnosticInterval 100;
+    }
+    reactionModel finiteRateParticleChemistry;
+    balanceReactionLoad false;
+    finiteRateParticleChemistryCoeffs { zLower 0; zUpper 1; }
+}
+secondConditioning
+{
+    enabled true;
+    R 0.1;
+    Tu 298;
+    Tb 2248;
+    A_phi 9060;
+    Z_phi 20;
+    maxPhiSourceStep 0.05;
+    beta 0.05;
+    tauOU 0.000033;
+    maxOUTimeStepRatio 0.1;
+    randomSeed 5489;
+    restartMode resume; // Use initialize ONCE to migrate a legacy cloud, then restore resume.
+    burnedAgeRate 0; // Optional additional closure; zero reproduces phi*exp(beta*omega).
+    burnedAgeThreshold 0.99;
+}
+thermophysicalCoupling
+{
+    enabled true;
+    // All 24 entries in the supplied reaction file, including N2 and AR.
+    H2; H; O; O2; OH; H2O; HO2; H2O2; CH2; CH2S; CH3; CH4;
+    CO; CO2; HCO; CH2O; CH3O; C2H2; C2H3; C2H4; C2H5; C2H6; N2; AR;
+    condVariable z;
+    primarySpecies CO2;
+    tauRelaxBlending false;
+    tauRelax 0.00005; // Preserves the supplied initial 50*1us, now fixed in seconds.
+    tauUnits time;
+}
+eulerianStatistics
+{
+    enabled true;
+    z; T; CH4; O2; CO2; CO; OH; H2O; dx; dsPx; dsPy; dsPz;
+    secondCondFlag; omegaOU; phi; phiModified; burnedAge;
+}
+particleSampling { enabled false; numParticlesToStore 1000; }

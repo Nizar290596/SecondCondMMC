@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+sc_repo=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+if ! command -v wmake >/dev/null; then
+    echo 'Source the OpenFOAM v2406 environment first.' >&2
+    exit 1
+fi
+cd "$sc_repo"
+# Existing external mmcFoam dependencies must already be built.
+set +u
+source etc/bashrc
+set -u
+wmakeLnInclude -u src/mmcSupport
+wmakeLnInclude -u src/lagrangian/mmc
+wmake libso src/mmcSupport
+wmake libso src/mmcChemistryModel
+wmake libso src/lagrangian/mmc
+wmake applications/solvers/mmc/SPFoam

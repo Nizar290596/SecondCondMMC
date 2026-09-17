@@ -59,6 +59,7 @@ SourceFiles
 #define OUProcessUpdate_H
  
 #include "scalar.H"
+#include "SecondConditioningNumerics.H"
  
 // * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
  
@@ -84,8 +85,7 @@ inline scalar OUStateUpdate
     const scalar xi
 )
 {
-    const scalar decay = exp(-dt / tauOU);
-    return omegaOld * decay + sqrt(1.0 - decay*decay) * xi;
+    return secondConditioningNumerics::ouUpdate(omegaOld, dt, tauOU, xi);
 }
  
  

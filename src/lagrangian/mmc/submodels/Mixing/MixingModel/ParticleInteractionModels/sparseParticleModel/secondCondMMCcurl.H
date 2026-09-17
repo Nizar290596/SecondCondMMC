@@ -26,64 +26,16 @@ Class
     Foam::secondCondMMCcurl
  
 Description
-    Second-conditioning mixing model for the MMC framework.
- 
-    Operates exclusively on the particle subset flagged with
-    secondCondFlag == 1 and pairs particles in the 4-dimensional reference
-    space
- 
-        (phi_modified, xi_x, xi_y, xi_z)
- 
-    where
-      - phi_modified = phiModified (modified progress variable, already
-                       computed from the OU process at each timestep)
-      - xi = shadow positions stored in the particle's existing XiR() field
-             as XiR()[0], XiR()[1], XiR()[2]
- 
-    The k-d tree splitting uses the normalisation factors from the inherited
-    Xii_ list (read from the Xim_i subdictionary — must have exactly 4
-    entries corresponding to phiMod_m, sPx_m, sPy_m, sPz_m).  A tight
-    normalisation for phi_modified (e.g. 0.01) causes the tree to split
-    preferentially on the progress-variable axis; looser normalisations for
-    the shadow-position coordinates (e.g. 0.05) provide spatial context with
-    lower priority.  Physical coordinates are NOT used as split dimensions
-    (the ncond = 3 + i offset in KkdTreeLikeSearch ensures this).
- 
-    The aISO timescale is computed identically to MMCcurl.  Only Y, T, and
-    hA are mixed between the paired particles; phi, XiR, XiC, and
-    secondCondFlag are NOT mixed.
- 
-    Parallel pairing is not implemented; local pairing only.
- 
-    Usage in cloudProperties:
-    \verbatim
-    mixingModel    secondCondMMCcurl;
- 
-    secondCondMMCcurlCoeffs
-    {
-        // Base class: position-space normalisation (unused for k-d splitting
-        // but required by the constructor)
-        r_i     1e-3;
- 
-        // 4-entry normalisation for the (phiModified, xi_x, xi_y, xi_z)
-        // reference space.  Tight phiMod_m dominates the k-d tree splitting.
-        Xim_i
-        {
-            phiMod_m    0.01;
-            sPx_m       0.05;
-            sPy_m       0.05;
-            sPz_m       0.05;
-        }
- 
-        pairingMethod   local;
- 
-        // aISO timescale coefficients (same meaning as MMCcurl)
-        CL              0.5;
-        CE              0.1;
-        meanTimeScale   true;
-    }
-    \endverbatim
- 
+    Sparse species mixing conditioned strongly on phiModified and weakly on
+    physical position. Optional shadow coordinates are resolved by name.
+    includeShadowPositions selects (phiModified,x) or (phiModified,xi,x).
+    Only particles with secondCondFlag == 1 participate. Species, absolute
+    enthalpy and coupling scalars are mixed conservatively; temperature is
+    reconstructed. The dense reference and selection flag are not mixed here.
+
+    See docs/secondConditioning.md for normalization, rejection, random mixing,
+    prescribed/aISO timescales, parallel pairing, and validation requirements.
+
 \*---------------------------------------------------------------------------*/
  
 #ifndef secondCondMMCcurl_H
@@ -113,8 +65,10 @@ class secondCondMMCcurl
     // Private data
  
         //- aISO timescale model coefficients (same as MMCcurl)
-        const scalar CL_;
         const scalar CE_;
+        const Switch includeShadowPositions_;
+        const label diagnosticInterval_;
+        void configureReferenceSpace();
  
         //- true  → harmonic mean of the two particle mixing time scales
         //- false → minimum of the two particle mixing time scales
@@ -123,9 +77,9 @@ class secondCondMMCcurl
  
     // Private member functions
  
-        //- Mix only Y, T, and hA between paired particles.
-        //  Deliberately does NOT mix phi, XiR, XiC, or secondCondFlag.
-        static void mixSpeciesOnly
+        //- Mix Y, hA and XiC; reconstruct T from thermodynamics.
+        //  Does not mix phi, XiR, burnedAge or secondCondFlag.
+        void mixSpeciesOnly
         (
             particleType& p,
             particleType& q,
@@ -138,9 +92,8 @@ protected:
     // Override of base-class particle-list builder
  
         //- Build the local particle list filtered to secondCondFlag == 1,
-        //  populate eulerianFieldDataList_ with a 4D XiR
-        //  (phiModified, xi_x, xi_y, xi_z), interpolate Eulerian fields,
-        //  and call findPairs() for local pairing.
+        //  populate the selected reference coordinates and transport fields,
+        //  then use the selected local/global/neighbour pairing method.
         virtual void buildParticleList() override;
  
  

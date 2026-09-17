@@ -243,25 +243,13 @@
 
 //- MMC variables (reference and coupling)
 
-        //- Define location of file with mmcVariables definitions
-        //const fileName solverDir = 
-        //    mmcStatusMessage::solverBasePath("applications/solvers/mmc/vlShadowPositionFoam"); 
-        
-        //const fileName userDir = getEnv("WM_PROJECT_USER_DIR");
-        //const fileName mmcVersion = "mmcFoam";
-        //const fileName solverDir = userDir/mmcVersion/"applications/solvers/mmc/vlShadowPositionFoam";
-
-//	const fileName solverDir = "/home/562/nh4682/OpenFOAM/nh4682-v2406/mmcFoam/applications/solvers/mmc/vlShadowPositionFoam";
-//	const fileName solverDir = "/home/nizar/OpenFOAM/nizar-v2406/mmcFoam/applications/solvers/mmc/SPFoam";
-	const fileName solverDir = "/home/562/nh4682/OpenFOAM/nh4682-v2406/mmcFoam/applications/solvers/mmc/SPFoam";
-
+        // Case-local definitions are part of the reproducible case input.
         const IOdictionary control
         (
             IOobject
             (
                 "mmcVariablesDefinitions",
-                // Location of solver
-                solverDir,
+                mesh.time().constant(),
                 mesh,
                 IOobject::MUST_READ,
                 IOobject::NO_WRITE

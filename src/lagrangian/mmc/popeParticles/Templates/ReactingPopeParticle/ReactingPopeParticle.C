@@ -63,11 +63,9 @@ void Foam::ReactingPopeParticle<ParticleType>::calc
 
 //    Info << "calc reaction" << endl;
     
-    // Reaction models uses mixture fraction. For now I pass the conditioning 
-    // variable  used for density coupling but something more generic is required.
-
-    // Conditioning (state) variable
-    const word cVarName = cloud.coupling().cVarName();
+    // Chemistry always uses the registered mixture fraction, as does
+    // BalanceReactModel. Kernel conditioning is an independent choice.
+    const word cVarName("z");
 
     if(!cloud.balanceReactionLoad())
     {

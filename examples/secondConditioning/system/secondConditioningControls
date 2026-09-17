@@ -1,0 +1,7 @@
+// Include at the END of the existing system/controlDict after checking
+// startFrom/latestTime/endTime. These entries do not choose a restart time.
+application SPFoam;
+deltaT 1e-6;
+adjustTimeStep yes;
+maxCo 0.3;
+maxDeltaT 3.3e-6;

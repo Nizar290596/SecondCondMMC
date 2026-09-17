@@ -139,6 +139,14 @@ Foam::ShadowPosition<Foam::scalar>::ShadowPosition
         )
     )
 {
+    if (componentName_ != "x" && componentName_ != "y" && componentName_ != "z")
+        FatalErrorInFunction << "Shadow component must be x, y or z" << exit(FatalError);
+    if (!(a_ > 0 && b_ >= 0))
+        FatalErrorInFunction << "Shadow position requires a > 0 and b >= 0" << exit(FatalError);
+    // Independent component streams; optional case seed. Copies preserve state.
+    const label seed = entry.lookupOrDefault<label>("randomSeed", 5489);
+    const int seeds[] = {int(seed), int(Pstream::myProcNo()), int(component_), 139777};
+    this->rndGen_.RandomInitByArray(seeds, 4);
     constructTimeScaleModelTable();
 }
 
@@ -207,7 +215,10 @@ Foam::ShadowPosition<Foam::scalar>::ShadowPosition
             sp.vbInterp_().psi()
         )         
     )
-{}
+{
+    this->rndGen_ = sp.rndGen_;
+    constructTimeScaleModelTable();
+}
 // * * * * * * * * * * * * * *  Friend Functions  * * * * * * * * * * * * * * //
 
 

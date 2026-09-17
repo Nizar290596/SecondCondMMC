@@ -70,6 +70,7 @@ Description
 #include "CloudMixingModel.H"
 #include <vector>
 #include <list>
+#include "SecondConditioningNumerics.H"
 //#include "kdTree.H"
 #include "particlePtrList.H"
 #include "particlePairingMethod.H"
@@ -205,8 +206,24 @@ class mixParticleModel
             //  reference space (e.g. secondCondMMCcurl with 4D
             //  (phiModified, xi_x, xi_y, xi_z)) overwrite this list in
             //  their constructor.
-            List<scalar> Xii_;
             const scalar ri_;
+            List<scalar> Xii_;
+            const Switch physicalLocalization_;
+            const scalar retainedPairFraction_;
+            const scalar maxPairDistance_;
+            const word mixingExtentModel_;
+            const word mixingTimeScale_;
+            const scalar prescribedTauMix_;
+            bool processorGraphReady_ = false;
+            std::vector<std::pair<int,int>> processorEdges_;
+            mutable scalar minMixingTime_ = GREAT;
+            mutable scalar maxMixingCourant_ = 0;
+            scalar weightedProgressVarianceLoss_ = 0;
+
+            scalar readMixingConstant() const;
+            scalar pairMixingExtent(const eulerianFieldData& p,
+                const eulerianFieldData& q, scalar dt, scalar tau) const;
+
             //const List<scalar> Xii_;
 
         // (Optional) Discard particles for parallel mixing if their reference 

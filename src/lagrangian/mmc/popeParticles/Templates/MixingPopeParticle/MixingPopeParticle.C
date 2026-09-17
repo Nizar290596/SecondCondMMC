@@ -256,6 +256,7 @@ Foam::MixingPopeParticle<ParticleType>::getStatisticalData
     const wordList& vars
 ) const
 {
+    secondCondFlagSample_ = secondCondFlag_;
     return ParticleType::getStatisticalData(vars);
 }
 
@@ -281,10 +282,14 @@ void Foam::MixingPopeParticle<ParticleType>::initStatisticalSampling()
     // Add physical-space mixing distance
     this->nameVariableLookUpTable().addNamedVariable("dx", dx_);
 
+    secondCondFlagSample_ = secondCondFlag_;
+    this->nameVariableLookUpTable().addNamedVariable("secondCondFlag", secondCondFlagSample_);
+
     // Second conditioning scalar
     this->nameVariableLookUpTable().addNamedVariable("omegaOU", omegaOU_);
     this->nameVariableLookUpTable().addNamedVariable("phi",	phi_);
     this->nameVariableLookUpTable().addNamedVariable("phiModified", phiModified_);
+    this->nameVariableLookUpTable().addNamedVariable("burnedAge", burnedAge_);
 
     // Note: XiRNames is initialized as a static variablebefore 
     // XiR_ is set. Therefore we need to check if they are set to avoid
@@ -326,7 +331,8 @@ Foam::MixingPopeParticle<ParticleType>::MixingPopeParticle
     secondCondFlag_(p.secondCondFlag_),
     omegaOU_(p.omegaOU_),
     phi_(p.phi_),
-    phiModified_(p.phiModified_)
+    phiModified_(p.phiModified_),
+    burnedAge_(p.burnedAge_)
 {
     initStatisticalSampling();
 }
@@ -346,7 +352,8 @@ Foam::MixingPopeParticle<ParticleType>::MixingPopeParticle
     secondCondFlag_(p.secondCondFlag_),
     omegaOU_(p.omegaOU_),
     phi_(p.phi_),
-    phiModified_(p.phiModified_)
+    phiModified_(p.phiModified_),
+    burnedAge_(p.burnedAge_)
 {
     initStatisticalSampling();
 }
